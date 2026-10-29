@@ -39,6 +39,11 @@ HEADERS = {
     "Accept": "text/csv,application/csv;q=0.9,*/*;q=0.8",
 }
 URL_CHARTJS = "https://cdn.jsdelivr.net/npm/chart.js"
+# Segunda fuente del IPC: variaciones mensuales publicadas (ArgentinaDatos). datos.gob.ar suele tardar días en cargar el
+# último mes, aunque el INDEC ya lo haya publicado. Esta fuente solo se usa para meses POSTERIORES al último nivel de la serie oficial.
+URL_INFLACION = "https://api.argentinadatos.com/v1/finanzas/indices/inflacion"
+# Último recurso si ambas APIs fallan: variaciones mensuales ya publicadas por el INDEC (informe del 13/10/2026: septiembre 2026 = +1,9 %).
+VAR_RECIENTES = {"2026-09": 1.9}
 
 # IPCBA (Ciudad de Buenos Aires, base jul-2011/jun-2012 = 100), nivel general.
 # Fuente: IDECBA, informes de resultados mensuales 2016. Se usa para empalmar
@@ -212,6 +217,46 @@ def registros_ipc(tabla):
     ]
 
 
+def extender_ipc(tabla, verbose=True):
+    """
+    Agrega los meses que el INDEC ya publicó pero datos.gob.ar todavía no cargó, encadenando la variación mensual
+    publicada sobre el último nivel oficial:  IPC_t = IPC_(t-1) × (1 + var_t / 100).
+    Esas filas se marcan con fuente 'INDEC (var.)'; el INDEC publica la variación con 1 decimal, por lo que el nivel es
+    una aproximación hasta que datos.gob.ar cargue el nivel oficial (entonces se reemplaza solo).
+    Devuelve (tabla, [periodos agregados], origen_extra).
+    """
+    p = _impresor(verbose)
+    variaciones, origen = {}, ""
+    try:
+        r = requests.get(URL_INFLACION, headers=HEADERS, timeout=20)
+        r.raise_for_status()
+        for x in r.json():
+            try:
+                variaciones[str(x["fecha"])[:7]] = float(x["valor"])
+            except (KeyError, TypeError, ValueError):
+                continue
+        origen = "variaciones mensuales de ArgentinaDatos"
+    except Exception as e:                                   # red, formato inesperado...
+        p(f"  ⚠ ArgentinaDatos (inflación) no respondió: {str(e)[:120]}")
+    for per, v in VAR_RECIENTES.items():                     # último recurso, solo para meses que falten
+        if per not in variaciones:
+            variaciones[per] = v
+            origen = origen or "variación publicada por el INDEC (copia incluida)"
+    agregados = []
+    while True:
+        ult = tabla.index[-1]
+        sig = ult + pd.offsets.MonthBegin(1)
+        v = variaciones.get(sig.strftime("%Y-%m"))
+        if v is None or not (-10 <= v <= 60):                # fuera de rango = dato dudoso: no se usa
+            break
+        fila = {c: None for c in tabla.columns}
+        fila.update({"ipc": float(tabla["ipc"].iloc[-1]) * (1 + v / 100), "fuente": "INDEC (var.)"})
+        tabla.loc[sig] = pd.Series(fila)
+        agregados.append(sig.strftime("%Y-%m"))
+        p(f"  + {sig.strftime('%Y-%m')}: {v:+.1f}% mensual publicado -> IPC {tabla['ipc'].iloc[-1]:.4f}")
+    return tabla, agregados, origen
+
+
 def armar_ipc(csv_respaldo=None, verbose=True):
     """Ejecuta los pasos 1 a 4. Devuelve (tabla, registros, origen)."""
     titulo("IPC · Paso 1: descarga del IPC Nacional (INDEC) vía datos.gob.ar", verbose)
@@ -221,6 +266,10 @@ def armar_ipc(csv_respaldo=None, verbose=True):
     df = limpiar_ipc(texto, verbose)
     titulo("IPC · Paso 3: empalme con IPCBA (ene-nov 2016)", verbose)
     tabla = empalmar_2016(df, verbose)
+    titulo("IPC · Paso 3b: meses publicados por el INDEC que datos.gob.ar aún no cargó", verbose)
+    tabla, nuevos, origen_extra = extender_ipc(tabla, verbose)
+    if nuevos:
+        origen += f" + {len(nuevos)} mes(es) por variación publicada ({', '.join(nuevos)}; {origen_extra})"
     titulo("IPC · Paso 4: variaciones (pct_change) y estadística descriptiva", verbose)
     tabla = calcular_variaciones(tabla)
     estadisticas_ipc(tabla, verbose)
@@ -475,3 +524,4 @@ def generar_html(plantilla, registros_ipc_, activos=None, inline_chartjs=True, v
     else:
         p("Chart.js por CDN.")
     return html
+
