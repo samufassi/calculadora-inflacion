@@ -19,7 +19,7 @@ BASE = Path(__file__).parent
 CSV_RESPALDO = (BASE / "data_ipc.csv").read_text(encoding="utf-8")
 PLANTILLA = (BASE / "plantilla.html").read_text(encoding="utf-8")
 ACTIVOS_JSON = BASE / "datos_activos.json"
-CACHE_HORAS = 6          # IPC
+CACHE_HORAS = 1          # IPC
 CACHE_MERCADO_MIN = 30   # activos y dólar
 
 st.set_page_config(
@@ -123,3 +123,4 @@ if activos is None:
     )
 
 components.html(construir_html(registros, activos, False), height=alto, scrolling=True)
+
