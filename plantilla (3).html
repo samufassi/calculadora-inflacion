@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inflación Argentina · Calculadora y Canasta 2016–Hoy</title>
+<meta name="description" content="Calculadora de inflación y simulador de canasta de productos de Argentina, 2016 a la actualidad. Serie IPC INDEC con empalme IPCBA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   TOKENS DE DISEÑO (paleta Dark Fintech obligatoria)
+   ========================================================================== */
+:root{
+  --bg:#080B12;
+  --surface:#101827;
+  --surface-2:#151E2E;
+  --border:#293548;
+  --text:#F8FAFC;
+  --muted:#94A3B8;
+  --accent:#635BFF;
+  --blue:#3B82F6;
+  --glow:rgba(99,91,255,.25);
+  --red:#F87171;
+  --green:#34D399;
+  --r-sm:10px; --r-md:12px; --r-lg:14px;
+  --nav-h:64px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--text);
+  min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding-top:var(--nav-h);
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(900px 520px at 50% -140px, rgba(99,91,255,.22), transparent 70%),
+    radial-gradient(700px 420px at 100% 0, rgba(59,130,246,.13), transparent 70%),
+    radial-gradient(620px 420px at 0 18%, rgba(99,91,255,.08), transparent 70%);
+}
+button,input,select{font-family:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Navbar ---------- */
+.nav{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:0 clamp(14px,3vw,32px);
+  background:rgba(8,11,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand svg{flex:none}
+.brand small{font-weight:500;color:var(--muted);font-size:12px;margin-left:2px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  appearance:none;background:transparent;border:1px solid transparent;cursor:pointer;
+  padding:8px 14px;border-radius:var(--r-sm);font-size:13.5px;font-weight:500;color:var(--muted);
+  white-space:nowrap;transition:color .15s,background .15s,border-color .15s,box-shadow .15s;
+}
+.tab:hover{color:var(--text);background:var(--surface-2)}
+.tab[aria-selected="true"]{color:var(--text);background:var(--surface-2);border-color:var(--border);box-shadow:0 0 0 3px var(--glow)}
+.tab:focus-visible,.btn:focus-visible,.chk:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(14px,3vw,28px) 72px}
+.view{display:none;animation:fade .28s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.hero{text-align:center;padding:clamp(34px,6vw,64px) 0 clamp(22px,3vw,34px)}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
+  background:rgba(99,91,255,.12);border:1px solid rgba(99,91,255,.38);
+  color:#C9C6FF;font-size:12.5px;font-weight:500;
+}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+h1{
+  margin:18px auto 12px;font-size:clamp(30px,5vw,52px);line-height:1.08;letter-spacing:-.03em;font-weight:800;
+  background:linear-gradient(180deg,#fff 30%,#A5B4FC);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero p{max-width:640px;margin:0 auto;color:var(--muted);font-size:clamp(14px,1.6vw,16.5px)}
+.page-title{padding:clamp(28px,4vw,46px) 0 22px}
+.page-title h2{font-size:clamp(24px,3.4vw,34px);letter-spacing:-.025em;font-weight:700}
+.page-title p{color:var(--muted);margin-top:6px;max-width:720px}
+
+.card,.kpi,.panel>*{min-width:0}
+.chart-box{min-width:0}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:20px;transition:border-color .2s,box-shadow .2s;
+}
+.card:hover{border-color:#364560}
+
+/* ---------- Panel de control ---------- */
+.panel{
+  display:grid;gap:14px;align-items:end;grid-template-columns:1.1fr 1fr 1fr auto;
+  padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+}
+.panel.panel-3{grid-template-columns:1.3fr .8fr 1fr}
+.panel.panel-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel.panel-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:7px;letter-spacing:.02em}
+.control{position:relative}
+.control .pre{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:500;pointer-events:none}
+input[type=number],select{
+  width:100%;height:46px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);
+  padding:0 14px;font-size:15px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s;
+  font-variant-numeric:tabular-nums;
+}
+input[type=number].with-pre{padding-left:32px}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+select{
+  appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:38px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%2394A3B8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+select option{background:var(--surface-2);color:var(--text)}
+input:hover,select:hover{border-color:#3A4A64}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+input.pre-wide{padding-left:56px!important}
+input.invalid{border-color:var(--red);box-shadow:0 0 0 3px rgba(248,113,113,.18)}
+.btn{
+  height:46px;padding:0 22px;border:0;border-radius:var(--r-md);cursor:pointer;font-weight:600;font-size:14.5px;color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--blue));
+  box-shadow:0 6px 22px -8px rgba(99,91,255,.7);transition:transform .15s,box-shadow .15s,filter .15s;white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 28px -8px rgba(99,91,255,.85);filter:brightness(1.08)}
+.btn:active{transform:translateY(0)}
+.btn.ghost{
+  background:var(--surface-2);border:1px solid var(--border);box-shadow:none;color:var(--text);font-weight:500;height:40px;padding:0 16px;font-size:13.5px;
+}
+.btn.ghost:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);filter:none}
+.note{margin-top:12px;color:var(--muted);font-size:13px}
+.note b{color:var(--text);font-weight:600}
+.summary{margin-top:16px;padding:14px 18px;border-radius:var(--r-md);background:rgba(99,91,255,.08);border:1px solid rgba(99,91,255,.25);color:#CBD5E1;font-size:14.5px}
+.summary b{color:#fff}
+.hint{color:var(--muted);font-size:12.5px;margin-top:8px;min-height:18px}
+
+/* ---------- KPIs ---------- */
+.kpis{display:grid;gap:14px;margin-top:18px;grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,1fr))}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpis.kauto{grid-template-columns:repeat(auto-fit,minmax(205px,1fr))}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.tk{color:#64748B;font-weight:500;font-size:11.5px}
+.kpis.kauto .kpi-value.sm{font-size:clamp(17px,1.5vw,21px);white-space:nowrap}
+.kpi{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 18px 16px;
+  display:flex;flex-direction:column;gap:8px;min-width:0;transition:border-color .2s,box-shadow .2s,transform .2s;
+}
+.kpi:hover{border-color:rgba(99,91,255,.6);box-shadow:0 0 0 4px var(--glow)}
+.kpi--hero{border-color:var(--accent);background:linear-gradient(160deg,rgba(99,91,255,.16),var(--surface-2) 60%);box-shadow:0 0 0 1px rgba(99,91,255,.25),0 14px 40px -18px rgba(99,91,255,.55)}
+.kpi-label{min-height:24px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.pill{
+  padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--blue));font-variant-numeric:tabular-nums;white-space:nowrap
+}
+.kpi-value{font-size:clamp(22px,2.3vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi-value.sm{font-size:clamp(18px,1.8vw,23px)}
+.kpi-foot{font-size:12.5px;color:var(--muted);min-height:18px}
+.kpi--loss{border-color:rgba(248,113,113,.55);background:linear-gradient(160deg,rgba(248,113,113,.12),var(--surface-2) 60%)}
+.pill--loss{background:linear-gradient(135deg,#F87171,#FB923C)}
+.vivo{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:0 0 18px}
+.vivo .spot{flex:1 1 100%;font-size:13.5px;color:var(--muted)}
+.vivo .spot b{color:var(--text);font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 auto}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--muted);white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.chip.ok i{background:var(--green);box-shadow:0 0 8px var(--green)}
+.chip.mal i{background:var(--red)}
+.chip.cache i{background:#FACC15}
+.chip.pend i{animation:pulso 1s ease-in-out infinite}
+@keyframes pulso{50%{opacity:.25}}
+.btn-sec{font:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 13px;cursor:pointer}
+.btn-sec:hover{border-color:var(--accent)}
+.opts{margin:10px 0 0}
+.ayuda{margin-bottom:18px;padding:14px 18px}
+.ayuda summary{cursor:pointer;font-weight:600;font-size:14.5px}
+.ayuda ul{margin:10px 0 2px 18px;color:var(--muted);font-size:13.5px;display:grid;gap:6px}
+.ayuda li b{color:var(--text)}
+select.mini-sel{width:auto;min-width:0;font-size:12.5px;padding:5px 28px 5px 10px;border-radius:8px}
+#i-kpis .kpi-value.sm{white-space:normal}
+.mini-sel:disabled{opacity:.5}
+.neg{color:var(--red)}
+.pos{color:var(--green)}
+
+/* ---------- Gráficos ---------- */
+.charts{display:grid;gap:14px;margin-top:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.charts.one{grid-template-columns:minmax(0,1fr)}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.chart-head h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.chart-head p{font-size:12.5px;color:var(--muted);margin-top:2px}
+.chart-box{position:relative;height:330px}
+.chart-fallback{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:13.5px;padding:20px;border:1px dashed var(--border);border-radius:var(--r-md)}
+.no-chart .chart-fallback{display:flex}
+.no-chart canvas{display:none}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 6px;border-radius:8px}
+.chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+
+/* ---------- Tabla ---------- */
+.toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.search{position:relative;flex:1 1 280px;max-width:420px}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none}
+.search input{width:100%;height:44px;padding:0 14px 0 40px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);font-size:14.5px;outline:none}
+.count{color:var(--muted);font-size:13px}
+.table-wrap{max-height:620px;overflow:auto;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface)}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+thead th{
+  position:sticky;top:0;z-index:2;background:#0D1522;color:var(--muted);font-weight:600;font-size:12px;
+  text-transform:uppercase;letter-spacing:.06em;text-align:right;padding:13px 18px;border-bottom:1px solid var(--border);white-space:nowrap
+}
+thead th:nth-child(1),thead th:nth-child(2){text-align:left}
+tbody td{padding:11px 18px;border-bottom:1px solid rgba(41,53,72,.55);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody td:nth-child(1),tbody td:nth-child(2){text-align:left}
+tbody td:nth-child(1){color:#C9C6FF;font-weight:500}
+tbody tr:hover td{background:rgba(99,91,255,.07)}
+tbody tr:last-child td{border-bottom:0}
+.tag{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--muted);border:1px solid var(--border);letter-spacing:.03em;vertical-align:1px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+/* ---------- Metodología ---------- */
+.prose-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.prose-grid .wide{grid-column:1/-1}
+.card h3{font-size:16px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em}
+.card p,.card li{color:#B6C2D4;font-size:14.2px}
+.card p+p{margin-top:10px}
+.card ul{padding-left:18px;margin-top:8px;display:grid;gap:6px}
+.formula{
+  margin:12px 0 4px;padding:13px 16px;border-radius:var(--r-md);background:var(--surface-2);border:1px solid var(--border);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;color:#E2E8F0;overflow-x:auto;line-height:1.7
+}
+.formula em{color:#A5B4FC;font-style:normal}
+.mini-wrap{margin-top:12px;overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md)}
+.mini{width:100%;min-width:430px;margin-top:0;font-size:13px;border-collapse:separate;border-spacing:0}
+.mini th{background:#0D1522;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:right}
+.mini th:first-child,.mini td:first-child{text-align:left}
+.mini td{padding:8px 12px;border-top:1px solid rgba(41,53,72,.55);text-align:right;font-variant-numeric:tabular-nums}
+a{color:#A5B4FC;text-decoration:none;border-bottom:1px solid rgba(165,180,252,.35)}
+a:hover{color:#fff;border-color:#fff}
+.warn{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.05)}
+.warn h3{color:#FCD34D}
+footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---------- Responsive ---------- */
+@media (max-width:980px){
+  .panel{grid-template-columns:1fr 1fr}
+  .panel .btn{grid-column:1/-1}
+  .panel.panel-3{grid-template-columns:1fr 1fr}
+  .panel.panel-3 .field:first-child{grid-column:1/-1}
+  .panel.panel-4,.panel.panel-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis.kauto{grid-template-columns:repeat(auto-fit,minmax(205px,1fr))}
+  .kpis.kauto .kpi--hero{grid-column:auto}
+  .kpis.k3{grid-template-columns:minmax(0,1fr)}
+  .kpi--hero{grid-column:1/-1}
+  .charts{grid-template-columns:minmax(0,1fr)}
+  .prose-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:620px){
+  .brand small{display:none}
+  .panel{grid-template-columns:1fr}
+  .panel.panel-3{grid-template-columns:1fr}
+  .panel.panel-4{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:minmax(0,1fr)}
+  .kpis.kauto{grid-template-columns:minmax(0,1fr)}
+  .chart-box{height:280px}
+  thead th,tbody td{padding:10px 12px}
+  .nav{gap:8px}
+  .tab{padding:8px 10px;font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<!-- Chart.js por CDN (requisito). Si falla, se intenta un CDN alternativo (cdnjs). -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';s.onload=function(){window.__chartListo&&window.__chartListo()};document.head.appendChild(s)"></script>
+</head>
+<body>
+
+<!-- ============================ NAVBAR ============================ -->
+<header class="nav">
+  <div class="brand" aria-label="Inflación AR">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <rect width="32" height="32" rx="9" fill="url(#lg)"/>
+      <path d="M8 21l5-6 4 3 7-9" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="24" cy="9" r="2" fill="#fff"/>
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#635BFF"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs>
+    </svg>
+    <span>Inflación<span style="color:#A5B4FC"> AR</span></span><small>2016 – hoy</small>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" data-tab="calculadora" aria-selected="true">Calculadora</button>
+    <button class="tab" role="tab" data-tab="canasta" aria-selected="false">Canasta</button>
+    <button class="tab" role="tab" data-tab="inversiones" aria-selected="false">Inversiones</button>
+    <button class="tab" role="tab" data-tab="serie" aria-selected="false">Serie histórica</button>
+    <button class="tab" role="tab" data-tab="metodologia" aria-selected="false">Metodología</button>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<!-- ====================== PESTAÑA 1 · CALCULADORA ====================== -->
+<section id="view-calculadora" class="view active" role="tabpanel">
+  <div class="hero">
+    <span class="badge"><i></i><span id="badge-texto">IPC INDEC</span></span>
+    <h1>¿Cuánto vale tu dinero hoy?</h1>
+    <p>Llevá cualquier importe de un mes a otro y mirá cuánto necesitás hoy para comprar lo mismo, usando la variación compuesta del IPC y no una suma de tasas.</p>
+  </div>
+
+  <div class="panel" id="panel-calc">
+    <div class="field">
+      <label for="c-monto">Importe inicial (ARS)</label>
+      <div class="control"><span class="pre">$</span><input id="c-monto" class="with-pre" type="number" inputmode="decimal" min="0" step="any" value="100000" autocomplete="off"></div>
+    </div>
+    <div class="field">
+      <label for="c-origen">Mes y año de origen</label>
+      <select id="c-origen"></select>
+    </div>
+    <div class="field">
+      <label for="c-destino">Mes y año de destino</label>
+      <select id="c-destino"></select>
+    </div>
+    <button class="btn" id="c-btn" type="button">Calcular</button>
+  </div>
+  <div class="hint" id="c-hint" role="status"></div>
+  <div class="summary" id="c-resumen"></div>
+
+  <div class="kpis">
+    <div class="kpi kpi--hero">
+      <div class="kpi-label"><span>Valor actualizado equivalente</span><span class="pill" id="k-mult">x1,0</span></div>
+      <div class="kpi-value" id="k-valor">—</div>
+      <div class="kpi-foot" id="k-valor-foot"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><span>Inflación acumulada</span></div>
+      <div class="kpi-value" id="k-acum">—</div>
+      <div class="kpi-foot">Variación compuesta del período</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><span>Diferencia nominal</span></div>
+      <div class="kpi-value" id="k-dif">—</div>
+      <div class="kpi-foot">Pesos adicionales necesarios</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><span>Pérdida de poder adquisitivo</span></div>
+      <div class="kpi-value" id="k-perd">—</div>
+      <div class="kpi-foot">1 − (IPC origen / IPC destino)</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="card">
+      <div class="chart-head">
+        <div><h3>Evolución del monto equivalente (ARS)</h3><p>Cuánto dinero necesitabas cada mes para igualar tu poder de compra inicial</p></div>
+        <label class="chk"><input type="checkbox" id="c-log"> Escala logarítmica</label>
+      </div>
+      <div class="chart-box" id="box-c1"><canvas id="ch-monto" role="img" aria-label="Evolución del monto equivalente en pesos"></canvas><div class="chart-fallback">No se pudo cargar Chart.js (¿sin conexión?). Los cálculos y la tabla funcionan igual.</div></div>
+    </div>
+    <div class="card">
+      <div class="chart-head">
+        <div><h3>Inflación mensual del período (%)</h3><p>Variación del IPC mes a mes entre el origen y el destino</p></div>
+      </div>
+      <div class="chart-box" id="box-c2"><canvas id="ch-mensual" role="img" aria-label="Inflación mensual del período"></canvas><div class="chart-fallback">No se pudo cargar Chart.js (¿sin conexión?). Los cálculos y la tabla funcionan igual.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== PESTAÑA 2 · CANASTA ====================== -->
+<section id="view-canasta" class="view" role="tabpanel">
+  <div class="page-title">
+    <h2>Simulador de canasta de productos</h2>
+    <p>Elegí un producto, una cantidad y un mes de origen: se compara contra el último mes disponible.</p>
+  </div>
+
+  <div class="panel panel-3">
+    <div class="field">
+      <label for="p-prod">Producto</label>
+      <select id="p-prod"></select>
+    </div>
+    <div class="field">
+      <label for="p-cant">Cantidad de unidades</label>
+      <div class="control"><input id="p-cant" type="number" inputmode="decimal" min="0" step="any" value="1" autocomplete="off"></div>
+    </div>
+    <div class="field">
+      <label for="p-origen">Mes y año de origen</label>
+      <select id="p-origen"></select>
+    </div>
+  </div>
+  <div class="hint" id="p-hint" role="status"></div>
+  <div class="note" id="p-nota"></div>
+
+  <div class="kpis k3">
+    <div class="kpi">
+      <div class="kpi-label"><span>Costo en mes de origen</span></div>
+      <div class="kpi-value" id="p-k-orig">—</div>
+      <div class="kpi-foot" id="p-k-orig-foot"></div>
+    </div>
+    <div class="kpi kpi--hero">
+      <div class="kpi-label"><span>Costo actualizado hoy</span><span class="pill" id="p-mult">x1,0</span></div>
+      <div class="kpi-value" id="p-k-hoy">—</div>
+      <div class="kpi-foot" id="p-k-hoy-foot"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><span>Aumento nominal</span></div>
+      <div class="kpi-value" id="p-k-dif">—</div>
+      <div class="kpi-foot" id="p-k-dif-foot"></div>
+    </div>
+  </div>
+
+  <div class="charts one">
+    <div class="card">
+      <div class="chart-head">
+        <div><h3 id="p-chart-title">Evolución del precio</h3><p>Precio por unidad. El precio actual es el relevado; el pasado se calcula retrocediendo con el IPC</p></div>
+        <label class="chk"><input type="checkbox" id="p-log"> Escala logarítmica</label>
+      </div>
+      <div class="chart-box" id="box-p"><canvas id="ch-precio" role="img" aria-label="Evolución del precio del producto"></canvas><div class="chart-fallback">No se pudo cargar Chart.js (¿sin conexión?). Los cálculos y la tabla funcionan igual.</div></div>
+    </div>
+  </div>
+
+  <div class="card warn" style="margin-top:14px">
+    <h3>Sobre estos precios</h3>
+    <p><b style="color:#fff">Origen de los datos.</b> Los precios actuales se tomaron de las tiendas online oficiales de tres cadenas: <a href="https://www.disco.com.ar" target="_blank" rel="noopener">Disco</a>, <a href="https://www.carrefour.com.ar" target="_blank" rel="noopener">Carrefour</a> y <a href="https://www.cotodigital.com.ar" target="_blank" rel="noopener">Coto</a>. La consulta se hizo el 19/10/2026 y para cada producto se buscó la marca y la presentación indicadas.</p>
+    <p><b style="color:#fff">Cómo se calcula el precio actual.</b> Es el promedio simple de los precios publicados por las cadenas en las que se encontró el producto. Coto se incluyó solo en el arroz: en el resto no se obtuvo un precio comparable. Cuando una cadena no ofrecía la presentación exacta, se usó la más cercana o se escaló por kilo, y se aclara en la nota (ℹ) que aparece al elegir el producto. Esos valores quedan cargados como precio de agosto de 2026. Si el INDEC publica un IPC posterior, el precio de «hoy» se actualiza con esa variación.</p>
+    <p><b style="color:#fff">Cómo se calcula el pasado.</b> Los precios de meses anteriores no se observaron: se obtienen retrocediendo el precio actual con la variación del IPC, es decir, precio(t) = precio actual × IPC(t) / IPC(agosto 2026). Por eso cada producto sube exactamente lo mismo que el índice general. La herramienta responde cuánto costaría hoy lo que se compraba antes, no cómo cambiaron los precios relativos entre productos.</p>
+    <p><b style="color:#fff">Alcance.</b> Son precios de góndola publicados online, sin promociones ni descuentos con tarjeta, y pueden diferir de los de una sucursal física. No constituyen un relevamiento estadístico representativo. Para incorporar precios históricos reales, se pueden cargar anclas adicionales en <code>datosCanasta</code>.</p>
+  </div>
+</section>
+
+<!-- ====================== PESTAÑA · INVERSIONES ====================== -->
+<section id="view-inversiones" class="view" role="tabpanel">
+  <div class="page-title">
+    <h2>¿Y si lo hubieras invertido?</h2>
+    <p>Compará qué habría pasado con un monto entre dos meses si lo invertías (S&amp;P 500 de precio o con dividendos, oro o bitcoin) o si te quedabas en pesos sin invertir y perdías poder de compra. Los datos se actualizan en vivo.</p>
+  </div>
+
+  <div class="vivo" id="i-vivo" aria-live="polite"></div>
+
+  <div id="inv-vacio" class="card warn" style="display:none">
+    <h3>No se pudieron obtener las cotizaciones</h3>
+    <p>Esta pestaña consulta en vivo Yahoo Finance (S&amp;P 500, oro y bitcoin) y el dólar (ArgentinaDatos y DolarApi). Puede fallar si no hay conexión a internet o si el navegador bloquea esos pedidos al abrir el archivo directamente desde la computadora.</p>
+    <p><button type="button" class="btn" id="i-reintentar">Reintentar</button></p>
+    <p><b>Alternativa:</b> si tenés un archivo <code>datos_activos.json</code> (lo genera el notebook de Colab o el script de Python), cargalo acá y la pestaña funciona con esas cotizaciones.</p>
+    <p><label class="btn" style="display:inline-block;cursor:pointer"><input id="i-json" type="file" accept=".json,application/json" style="display:none">Cargar datos_activos.json</label> <span id="i-json-msg" class="hint"></span></p>
+  </div>
+
+  <div id="inv-contenido">
+    <details class="card ayuda" open>
+      <summary>¿Cómo se leen estos resultados?</summary>
+      <ul>
+        <li><b>Pérdida de poder de compra:</b> qué habría pasado si te quedabas en pesos y no invertías. Seguís teniendo los mismos pesos, pero con inflación cada vez compran menos: se mide cuánto necesitarías hoy para comprar lo mismo que antes.</li>
+        <li><b>Rendimiento real:</b> el rendimiento descontando la inflación. Si es negativo, ganaste en pesos pero perdiste poder de compra.</li>
+      </ul>
+    </details>
+
+    <div class="panel panel-5">
+      <div class="field">
+        <label for="i-monto">Monto</label>
+        <div class="control"><span class="pre" id="i-pre">$</span><input id="i-monto" class="with-pre" type="number" inputmode="decimal" min="0" step="any" value="1000000" autocomplete="off"></div>
+      </div>
+      <div class="field">
+        <label for="i-origen">Mes de compra (origen)</label>
+        <select id="i-origen"></select>
+      </div>
+      <div class="field">
+        <label for="i-destino">Mes de venta (destino)</label>
+        <select id="i-destino"></select>
+      </div>
+      <div class="field">
+        <label for="i-modo">Moneda del cálculo</label>
+        <select id="i-modo">
+          <option value="ars">Pesos</option>
+          <option value="usd">Dólares (US$)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="i-dolar">Dólar de referencia</label>
+        <select id="i-dolar">
+          <option value="oficial">Oficial</option>
+          <option value="mep">MEP (bolsa)</option>
+          <option value="blue">Blue</option>
+        </select>
+      </div>
+    </div>
+    <div class="opts"><label class="chk">Cotización del dólar <select id="i-cot" class="mini-sel" aria-label="Cotización del dólar"><option value="operacion">Según la operación (compra / venta)</option><option value="venta">Siempre vendedor</option><option value="compra">Siempre comprador</option></select></label></div>
+    <div class="hint" id="i-hint" role="status"></div>
+    <div class="note" id="i-equiv" style="margin-top:0"></div>
+    <div class="summary" id="i-resumen" style="display:none"></div>
+
+    <div class="kpis kauto" id="i-kpis"></div>
+
+    <div class="charts">
+      <div class="card">
+        <div class="chart-head">
+          <div><h3>Evolución del monto</h3><p id="i-sub-evo">Valor mes a mes</p></div>
+          <label class="chk"><input type="checkbox" id="i-log"> Escala logarítmica</label>
+        </div>
+        <div class="chart-box" id="box-i1"><canvas id="ch-inv-evo" role="img" aria-label="Evolución del monto en cada alternativa"></canvas><div class="chart-fallback">No se pudo cargar Chart.js (¿sin conexión?). Los cálculos funcionan igual.</div></div>
+      </div>
+      <div class="card">
+        <div class="chart-head">
+          <div><h3 id="i-tit-ret">Rendimiento del período (%)</h3><p id="i-sub-ret">Variación entre el mes de compra y el de venta</p></div>
+          <select id="i-vista" class="mini-sel" aria-label="Tipo de rendimiento"><option value="real">Real (con inflación)</option><option value="nominal">Nominal</option></select>
+        </div>
+        <div class="chart-box" id="box-i2"><canvas id="ch-inv-ret" role="img" aria-label="Rendimiento por alternativa"></canvas><div class="chart-fallback">No se pudo cargar Chart.js (¿sin conexión?). Los cálculos funcionan igual.</div></div>
+      </div>
+    </div>
+    <div class="note" id="i-pie"></div>
+    <details class="card ayuda" id="i-traza" style="display:none;margin-top:16px" open>
+      <summary>Detalle de datos y trazabilidad (fuentes, fechas efectivas, unidades)</summary>
+      <div id="i-traza-tabla"></div>
+    </details>
+    <p style="margin-top:12px"><button type="button" class="btn-sec" id="i-csv">Descargar resultados (CSV)</button></p>
+    <div class="note">El detalle de las fórmulas, las fuentes y las limitaciones está en Metodología.</div>
+  </div>
+</section>
+
+<!-- ====================== PESTAÑA 3 · SERIE HISTÓRICA ====================== -->
+<section id="view-serie" class="view" role="tabpanel">
+  <div class="page-title">
+    <h2>Serie histórica del IPC</h2>
+    <p>Índice de precios al consumidor, base diciembre 2016 = 100. Enero a noviembre de 2016 provienen del empalme con el IPCBA.</p>
+  </div>
+  <div class="toolbar">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <label class="sr-only" for="s-buscar">Buscar por año o mes</label>
+      <input id="s-buscar" type="search" placeholder="Buscá por año o mes: 2023, marzo, dic 2019…" autocomplete="off">
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span class="count" id="s-count"></span>
+      <button class="btn ghost" id="s-csv" type="button">Descargar CSV</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Período</th><th>Mes</th><th>Índice IPC (Dic-2016 = 100)</th><th>Var. mensual</th><th>Var. interanual</th></tr></thead>
+      <tbody id="s-body"></tbody>
+    </table>
+    <div class="empty" id="s-empty" style="display:none">Sin resultados para esa búsqueda.</div>
+  </div>
+</section>
+
+<!-- ====================== PESTAÑA 4 · METODOLOGÍA ====================== -->
+<section id="view-metodologia" class="view" role="tabpanel">
+  <div class="page-title">
+    <h2>Metodología y fuentes</h2>
+    <p>Qué fórmulas usa la aplicación, cómo se empalmó la serie de 2016 y qué límites tiene el análisis.</p>
+  </div>
+
+  <div class="prose-grid">
+    <div class="card">
+      <h3>1. Factor de actualización</h3>
+      <p>Todo parte del cociente entre el índice del mes de destino y el del mes de origen.</p>
+      <div class="formula"><em>Factor</em> = IPC<sub>destino</sub> / IPC<sub>origen</sub><br><em>Valor actualizado</em> = Importe × Factor</div>
+      <p>El multiplicador que se ve en la píldora (por ejemplo <b>x166,3</b>) es este factor.</p>
+    </div>
+
+    <div class="card">
+      <h3>2. Inflación acumulada: composición, no suma</h3>
+      <div class="formula"><em>Acumulada</em> = (IPC<sub>destino</sub> / IPC<sub>origen</sub> − 1) × 100<br>= [ Π (1 + π<sub>t</sub>) − 1 ] × 100</div>
+      <p>Las tasas mensuales se componen porque cada mes se aplica sobre un nivel de precios ya aumentado. Dos meses seguidos de 10% dan 21%, no 20%: (1,10 × 1,10) − 1 = 0,21. Sumar tasas subestima la inflación y el error crece con el nivel y la duración.</p>
+    </div>
+
+    <div class="card">
+      <h3>3. Diferencia nominal y pérdida de poder adquisitivo</h3>
+      <div class="formula"><em>Diferencia nominal</em> = Valor actualizado − Importe<br><em>Pérdida de poder adquisitivo</em> = [ 1 − IPC<sub>origen</sub> / IPC<sub>destino</sub> ] × 100</div>
+      <p>La pérdida mide cuánto de la capacidad de compra original se evaporó: con un factor de 2, tu billete compra la mitad, o sea una pérdida de 50%. Es la inversa de la inflación acumulada: se acerca a 100% pero nunca lo alcanza.</p>
+    </div>
+
+    <div class="card">
+      <h3>4. Variaciones mensual e interanual</h3>
+      <div class="formula"><em>π mensual</em><sub>t</sub> = IPC<sub>t</sub> / IPC<sub>t−1</sub> − 1<br><em>π interanual</em><sub>t</sub> = IPC<sub>t</sub> / IPC<sub>t−12</sub> − 1</div>
+      <p>Son las mismas operaciones que <code>pct_change(1)</code> y <code>pct_change(12)</code> de pandas en el script de Python. La variación interanual existe recién desde enero de 2017, porque hacen falta doce meses previos.</p>
+    </div>
+
+    <div class="card wide">
+      <h3>5. Empalme de la serie (enero–noviembre 2016)</h3>
+      <p>El IPC Nacional del INDEC (serie <code>ipc_ng_nacional</code>, base diciembre 2016 = 100) empieza en diciembre de 2016. Para enero–noviembre de 2016 se usó el <b style="color:#fff">IPCBA</b> (IPC de la Ciudad de Buenos Aires, base julio 2011–junio 2012 = 100) reescalado para que diciembre de 2016 valga 100:</p>
+      <div class="formula">IPC*<sub>t</sub> = IPCBA<sub>t</sub> / IPCBA<sub>dic-2016</sub> × 100 &nbsp;&nbsp;para t = ene-2016 … nov-2016</div>
+      <p>El IPCBA tiene cobertura mensual completa en 2016, y su empalme conserva las variaciones porcentuales mes a mes del IPCBA; lo que se reescala es solo el nivel.</p>
+      <div class="mini-wrap"><table class="mini" id="m-empalme"><thead><tr><th>Mes</th><th>IPCBA original (base 2011-12 = 100)</th><th>Reescalado (Dic-2016 = 100)</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>6. Precios de la canasta</h3>
+      <p>El precio actual de cada producto es el promedio simple de los precios publicados por los supermercados consultados (Disco, Carrefour y, solo en el arroz, Coto), cargado como precio ancla en <code>datosCanasta</code>. Con una sola ancla, el precio de cualquier otro mes se obtiene indexando por IPC. Si se cargan 2 o más anclas, entre dos anclas el precio sigue la forma del IPC y se corrige de forma geométrica para llegar exactamente a la siguiente.</p>
+      <div class="formula">P(t) = P<sub>a</sub> × [IPC(t)/IPC(a)] × c<sup>τ</sup><br>c = (P<sub>b</sub>/P<sub>a</sub>) / (IPC(b)/IPC(a))</div>
+      <p>τ es la fracción de tiempo transcurrida entre las anclas a y b.</p>
+    </div>
+
+    <div class="card">
+      <h3>7. Fuentes</h3>
+      <ul>
+        <li><a href="https://datos.gob.ar" target="_blank" rel="noopener">datos.gob.ar</a> — API de Series de Tiempo, serie <code>145.3_INGNACNAL_DICI_M_15</code> (IPC Nacional, nivel general, base dic-2016 = 100), producida por INDEC.</li>
+        <li><a href="https://www.estadisticaciudad.gob.ar" target="_blank" rel="noopener">IDECBA</a> — Instituto de Estadística y Censos de la Ciudad de Buenos Aires, informes de resultados del IPCBA, 2016.</li>
+        <li><a href="https://www.indec.gob.ar" target="_blank" rel="noopener">INDEC</a> — Instituto Nacional de Estadística y Censos.</li>
+        <li><a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a> — cotizaciones diarias de S&amp;P 500 (precio y retorno total), oro y bitcoin, consultadas en vivo al abrir la página.</li>
+        <li><a href="https://argentinadatos.com" target="_blank" rel="noopener">ArgentinaDatos</a> y <a href="https://dolarapi.com" target="_blank" rel="noopener">DolarApi</a> — cotización histórica y actual del dólar oficial, MEP y blue.</li>
+      </ul>
+    </div>
+
+    <div class="card wide">
+      <h3>8. Inversiones: metodología, fuentes y convenciones</h3>
+      <p>Se simula comprar en el mes de origen y vender en el mes de destino. Las cotizaciones se consultan en vivo al abrir la página y se refrescan solas (dólar cada minuto, activos cada 5 minutos, IPC cada 6 horas). Si una fuente no responde se usa la última copia guardada en el navegador y el indicador de estado lo avisa; nunca se reemplaza un dato faltante por uno inventado: la tarjeta muestra "Sin datos".</p>
+      <table class="mini" style="min-width:560px"><thead><tr><th>Serie</th><th>Fuente / símbolo</th><th>Qué mide</th></tr></thead><tbody>
+        <tr><td>S&amp;P 500 (precio)</td><td>Yahoo Finance · ^GSPC</td><td>Índice de precios de 500 empresas de EE.UU. No incluye dividendos</td></tr>
+        <tr><td>S&amp;P 500 (retorno total)</td><td>Yahoo Finance · ^SP500TR</td><td>Mismo índice con dividendos reinvertidos. Es una serie aparte: nunca se suman dividendos a mano</td></tr>
+        <tr><td>Oro</td><td>Yahoo Finance · GC=F</td><td>Futuro continuo de oro (COMEX), USD por onza troy. No es el spot ni el fixing de LBMA</td></tr>
+        <tr><td>Bitcoin</td><td>Yahoo Finance · BTC-USD (respaldo: Binance BTCUSDT mensual, en USDT)</td><td>USD por bitcoin. Cotiza 24 h: el cierre diario es a las 24:00 UTC</td></tr>
+        <tr><td>Dólar oficial, MEP y blue</td><td>ArgentinaDatos (histórico) y DolarApi (último valor)</td><td>Pesos por US$, con cotización compradora y vendedora. Son agregadores, no la fuente primaria (Banco Nación / BCRA)</td></tr>
+        <tr><td>IPC</td><td>INDEC · datos.gob.ar, serie 145.3_INGNACNAL_DICI_M_15</td><td>Nivel de precios mensual, base dic-2016 = 100 (2016: IPCBA)</td></tr>
+      </tbody></table>
+      <h3 style="margin-top:18px">Fechas efectivas</h3>
+      <p>Cada mes se valúa con la <b style="color:#fff">última observación disponible hasta el fin de ese mes</b> (si el último día no hubo rueda, se usa la anterior más cercana). En el mes en curso se usa la última cotización disponible. La fecha efectiva de cada dato se muestra debajo de cada resultado y en el panel de trazabilidad. El IPC es un dato mensual: se asigna al mes de referencia, no a un día.</p>
+      <h3 style="margin-top:18px">Fórmulas</h3>
+      <div class="formula"><em>Inversión en dólares</em>: unidades = Monto / P<sub>origen</sub>; V = unidades × P<sub>destino</sub><br><em>Inversión en pesos</em>: US$ = Monto / TC<sub>vendedor, origen</sub>; unidades = US$ / P<sub>origen</sub>; V = unidades × P<sub>destino</sub> × TC<sub>comprador, destino</sub><br><em>Ganancia</em> = V − Monto &nbsp;·&nbsp; <em>Rendimiento</em> = (V / Monto − 1) × 100 &nbsp;·&nbsp; <em>Múltiplo</em> = V / Monto<br><em>Rendimiento real</em> = V / (Monto × IPC<sub>destino</sub> / IPC<sub>origen</sub>) − 1<br><em>Pérdida de poder de compra (pesos)</em>: necesario = Monto × IPC<sub>destino</sub> / IPC<sub>origen</sub>; pérdida = necesario − Monto<br><em>Pesos guardados, medidos en dólares</em>: V = Monto × TC<sub>comprador, origen</sub> / TC<sub>vendedor, destino</sub></div>
+      <p>El rendimiento acumulado no es anualizado. La variación del dólar y la inflación son medidas distintas y se muestran por separado.</p>
+      <h3 style="margin-top:18px">Cotización del dólar según la operación</h3>
+      <p>Para pasar pesos a dólares se compra dólar, a la cotización <b style="color:#fff">vendedora</b>; para pasar dólares a pesos se vende dólar, a la cotización <b style="color:#fff">compradora</b>. Por eso la ida y vuelta incluye la diferencia entre compra y venta. El selector permite usar siempre la vendedora o siempre la compradora. Si una fuente solo trae una de las dos, se usa la que hay y la página lo avisa.</p>
+      <ul>
+        <li><b style="color:#fff">Dólar oficial, MEP y blue:</b> cada serie se identifica por separado y no se mezclan. Durante el "cepo" el dólar oficial no estaba disponible para todos: los resultados en pesos de esos años son una referencia.</li>
+        <li><b style="color:#fff">Meses sin IPC:</b> si el mes de venta es posterior al último IPC publicado, el poder de compra se calcula con ese último índice (se indica) y la pérdida real puede ser mayor.</li>
+        <li><b style="color:#fff">Bitcoin:</b> cotiza 24 h, por lo que su cierre diario (24:00 UTC) no coincide en horario con el del S&amp;P 500 (16:00 de Nueva York) ni con el del oro.</li>
+        <li><b style="color:#fff">Costos:</b> no se consideran comisiones, impuestos ni restricciones de acceso. Los rendimientos pasados no garantizan resultados futuros.</li>
+      </ul>
+    </div>
+
+    <div class="card warn wide">
+      <h3>Limitaciones a tener en cuenta</h3>
+      <ul>
+        <li>El IPCBA mide la Ciudad de Buenos Aires y el IPC Nacional mide todo el país, con canastas y ponderaciones distintas. El tramo de 2016 es una aproximación razonable, no una serie nacional oficial.</li>
+        <li>El IPC es un promedio de hogares. Tu inflación personal puede ser mayor o menor según lo que consumas.</li>
+        <li>Los precios de la canasta corresponden a una consulta puntual (19/10/2026) de tiendas online. El pasado se calcula con el IPC y no es un precio observado.</li>
+        <li>Los últimos datos del INDEC pueden revisarse. Al abrir la página se consulta el IPC publicado y se agregan los meses nuevos.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Proyecto universitario · Programación para Economistas</span>
+  <span id="foot-fuentes">Datos: INDEC vía datos.gob.ar · IPCBA (GCBA) para 2016</span>
+</footer>
+</main>
+
+<script>
+/* ============================================================================
+   BASE DE DATOS EMBEBIDA — SERIE IPC (2016 → actualidad)
+   Generada por el script de Python (pandas). Campos por registro:
+     periodo    "YYYY-MM"
+     ipc        índice base Dic-2016 = 100
+     mensual    variación mensual en %     (null si no existe)
+     interanual variación interanual en %  (null si no existe)
+     fuente     "INDEC" | "IPCBA" (empalme)
+     ipcba      índice IPCBA original (solo 2016)
+   ============================================================================ */
+const DATOS_IPC = /*__DATOS_IPC__*/[];
+
+/* ============================================================================
+   DATOS DE MERCADO (opcional) — base inicial; la página los actualiza en vivo al abrirse
+   Estructura:  { fuente, descargado: "YYYY-MM-DD", tickers: {...},
+                  filas: [ { periodo: "YYYY-MM", sp500, oro, btc, dxy, ars }, ... ] }
+   Cierre mensual de cada serie (null si no hay dato). Si queda en null, la
+   pestaña Inversiones muestra cómo generar el archivo con datos.
+   ============================================================================ */
+const DATOS_ACTIVOS = /*__DATOS_ACTIVOS__*/null;
+
+/* ============================================================================
+   DICCIONARIO DE LA CANASTA — EDITÁ ACÁ PARA AGREGAR O CAMBIAR PRODUCTOS
+   ----------------------------------------------------------------------------
+   Cada producto necesita:
+     categoria  una de CATEGORIAS (define el orden en que aparece en el selector)
+     nombre     texto que se ve en el selector
+     unidad     presentación (se muestra al lado del nombre)
+     anclas     precios en pesos { "YYYY-MM": precio, ... }
+                · Con UNA sola ancla (el precio actual), el pasado se calcula
+                  retrocediendo con el IPC: precio(t) = precio_ancla × IPC(t)/IPC(ancla).
+                · Si cargás 2 o más anclas (ej. precios históricos), entre anclas el
+                  precio sigue la forma del IPC y llega exacto a cada ancla.
+                · anclas: {} (vacío) = producto sin precio cargado todavía.
+     nota       (opcional) aclaración que se muestra debajo del selector.
+
+   PRECIOS ACTUALES: promedio simple de los precios publicados por Disco y Carrefour
+   (y Coto, solo en el arroz) en sus tiendas online, consultados el 19/10/2026 y
+   cargados como ancla en "2026-08" (último mes con IPC publicado).
+   Para agregar un producto: copiá una línea, cambiá la clave y completá los datos.
+   Cada línea termina con coma, salvo la última.
+   ============================================================================ */
+const CATEGORIAS = ["Frescos", "Lácteos", "Secos", "Limpieza"];   // orden del selector
+
+const datosCanasta = {
+  /* ---------- Frescos ---------- */
+  ojobife:      { categoria: "Frescos", nombre: "Ojo de bife (mostrador)", unidad: "1 kg", anclas: { "2026-08": 25900 },
+                  nota: "Solo Carrefour (ojo de bife de novillito por kg). En Disco únicamente hay un corte envasado de La Hacienda ($40.635), que no es de mostrador." },
+  bolalomo:     { categoria: "Frescos", nombre: "Bola de lomo (mostrador)", unidad: "1 kg", anclas: { "2026-08": 13694.50 },
+                  nota: "Promedio de Disco ($12.399, sin stock al momento de la consulta) y Carrefour ($14.990)." },
+  tomate:       { categoria: "Frescos", nombre: "Tomate perita", unidad: "1 kg", anclas: { "2026-08": 5699 },
+                  nota: "Disco y Carrefour coinciden en $5.699." },
+  banana:       { categoria: "Frescos", nombre: "Banana", unidad: "1 kg", anclas: { "2026-08": 2749 },
+                  nota: "Promedio de Disco, banana Ecuador ($3.499), y Carrefour, banana selección ($1.999)." },
+  huevos:       { categoria: "Frescos", nombre: "Huevos, marca propia", unidad: "docena", anclas: { "2026-08": 5085.50 },
+                  nota: "Marca propia de cada cadena: Disco, Cuisine & Co ($5.050), y Carrefour, El Mercado ($5.121)." },
+
+  /* ---------- Lácteos ---------- */
+  leche:        { categoria: "Lácteos", nombre: "Leche descremada La Serenísima", unidad: "1 L", anclas: { "2026-08": 3060 },
+                  nota: "Solo Carrefour (UAT descremada 0%); no se obtuvo precio de Disco." },
+  casancrem:    { categoria: "Lácteos", nombre: "Queso crema Casancrem", unidad: "290 g", anclas: { "2026-08": 5995 },
+                  nota: "Disco y Carrefour coinciden en $5.995." },
+  parmesano:    { categoria: "Lácteos", nombre: "Queso parmesano La Serenísima", unidad: "150 g", anclas: { "2026-08": 8470.43 },
+                  nota: "Valor derivado: no hay presentación de 150 g. Se llevó a 150 g el precio por kg de Disco ($61.190) y de Carrefour ($51.749)." },
+
+  /* ---------- Secos ---------- */
+  arroz:        { categoria: "Secos", nombre: "Arroz Molinos Ala", unidad: "1 kg", anclas: { "2026-08": 2038.67 },
+                  nota: "Largo fino. Promedio de Disco ($2.036), Carrefour ($2.130) y Coto ($1.950)." },
+  fideos:       { categoria: "Secos", nombre: "Fideos secos Matarazzo", unidad: "500 g", anclas: { "2026-08": 2149.50 },
+                  nota: "Tirabuzón N°28. Promedio de Disco ($2.200) y Carrefour ($2.099)." },
+  panlactal:    { categoria: "Secos", nombre: "Pan lactal Bimbo", unidad: "580 g", anclas: { "2026-08": 8399.50 },
+                  nota: "Pan blanco de 580 g (no hay versión de 550 g). Promedio de Disco ($8.700) y Carrefour ($8.099)." },
+  yerba:        { categoria: "Secos", nombre: "Yerba mate Canarias", unidad: "1 kg", anclas: { "2026-08": 13750 },
+                  nota: "Solo Disco (sin palo, sabor tradicional): Carrefour vende Canarias solo en 500 g." },
+  mermelada:    { categoria: "Secos", nombre: "Mermelada BC", unidad: "390 g", anclas: { "2026-08": 3996 },
+                  nota: "Sabor durazno de 390 g (no hay versión de 454 g). Promedio de Disco ($4.023) y Carrefour ($3.969)." },
+  dulcedeleche: { categoria: "Secos", nombre: "Dulce de leche Milkaut", unidad: "400 g", anclas: { "2026-08": 4787.50 },
+                  nota: "Promedio de Disco, clásico ($5.000), y Carrefour, familiar ($4.575)." },
+  aceiteoliva:  { categoria: "Secos", nombre: "Aceite de oliva Oliovita", unidad: "500 ml", anclas: { "2026-08": 15526.50 },
+                  nota: "Promedio de Disco, aceite de oliva ($15.704), y Carrefour, extra virgen ($15.349)." },
+
+  /* ---------- Limpieza ---------- */
+  jabon:        { categoria: "Limpieza", nombre: "Jabón líquido para lavarropas Skip", unidad: "800 ml", anclas: { "2026-08": 4142.13 },
+                  nota: "Bio-enzimas de 800 ml (no hay versión de 1 L). Promedio de Disco ($5.200) y Carrefour ($3.084,25)." },
+  suavizante:   { categoria: "Limpieza", nombre: "Suavizante Comfort", unidad: "500 ml", anclas: { "2026-08": 7919.18 },
+                  nota: "Concentrado de 500 ml (no hay versión de 1 L). Promedio de Disco ($9.950) y Carrefour ($5.888,35)." },
+  detergente:   { categoria: "Limpieza", nombre: "Detergente Magistral", unidad: "750 ml", anclas: { "2026-08": 7805 },
+                  nota: "Ultra limón. Promedio de Disco ($8.050) y Carrefour ($7.560)." }
+  /* , nuevoProducto: { categoria: "Secos", nombre: "…", unidad: "…", anclas: { "2026-08": 0 }, nota: "…" } */
+};
+
+/* ============================================================================
+   UTILIDADES
+   ============================================================================ */
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const $ = (id) => document.getElementById(id);
+
+/* Formato numérico argentino: 1.250.000,00  ·  23,6% */
+function fmtNum(n, dec = 2){
+  if (n === null || n === undefined || !isFinite(n)) return "—";
+  const neg = n < 0 && Number(Math.abs(n).toFixed(dec)) !== 0;
+  const [ent, frac] = Math.abs(n).toFixed(dec).split(".");
+  const miles = ent.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return (neg ? "-" : "") + miles + (frac ? "," + frac : "");
+}
+const fmtARS = (n) => (n === null || !isFinite(n)) ? "—" : (n < 0 ? "-$ " : "$ ") + fmtNum(Math.abs(n), 2);
+const fmtPct = (n, d = 1) => (n === null || n === undefined || !isFinite(n)) ? "—" : fmtNum(n, d) + "%";
+function fmtCompacto(n){
+  const a = Math.abs(n);
+  if (a >= 1e12) return "$ " + fmtNum(n/1e12, 1) + " B";
+  if (a >= 1e9)  return "$ " + fmtNum(n/1e9, 1) + " mil M";
+  if (a >= 1e6)  return "$ " + fmtNum(n/1e6, 1) + " M";
+  if (a >= 1e3)  return "$ " + fmtNum(n/1e3, 0) + " mil";
+  return "$ " + fmtNum(n, 0);
+}
+const etiqueta  = (p) => { const [y, m] = p.split("-"); return MESES[+m - 1] + " " + y; };
+const etiquetaC = (p) => { const [y, m] = p.split("-"); return MESES_C[+m - 1] + " " + y.slice(2); };
+const normalizar = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
+/* ============================================================================
+   PREPARACIÓN DE LA SERIE
+   ============================================================================ */
+const SERIE = DATOS_IPC.slice().sort((a, b) => a.periodo < b.periodo ? -1 : 1);
+const POR_PERIODO = {};
+SERIE.forEach((d, i) => { d.i = i; POR_PERIODO[d.periodo] = d; });
+let ULTIMO = SERIE[SERIE.length - 1];
+const PRIMERO = SERIE[0];
+
+/* ============================================================================
+   CHART.JS — tema oscuro
+   ============================================================================ */
+const COL = { accent: "#635BFF", blue: "#3B82F6", grid: "#293548", text: "#94A3B8", tip: "#151E2E" };
+let chartsOK = false;
+const charts = {};
+
+function iniciarChartJS(){
+  if (typeof Chart === "undefined") return false;
+  Chart.defaults.color = COL.text;
+  Chart.defaults.borderColor = COL.grid;
+  Chart.defaults.font.family = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.plugins.legend.labels.usePointStyle = false;
+  Chart.defaults.plugins.legend.labels.boxWidth = 22;
+  Chart.defaults.plugins.legend.labels.boxHeight = 3;
+  Chart.defaults.plugins.tooltip.backgroundColor = COL.tip;
+  Chart.defaults.plugins.tooltip.borderColor = COL.grid;
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.titleColor = "#F8FAFC";
+  Chart.defaults.plugins.tooltip.bodyColor = "#CBD5E1";
+  Chart.defaults.plugins.tooltip.padding = 12;
+  Chart.defaults.plugins.tooltip.cornerRadius = 10;
+  Chart.defaults.plugins.tooltip.displayColors = true;
+  Chart.defaults.plugins.tooltip.boxPadding = 4;
+  chartsOK = true;
+  document.querySelectorAll(".chart-box").forEach(b => b.classList.remove("no-chart"));
+  return true;
+}
+function sinCharts(){ document.querySelectorAll(".chart-box").forEach(b => b.classList.add("no-chart")); }
+
+function gradLinea(chart){
+  const a = chart.chartArea; if (!a) return COL.accent;
+  const g = chart.ctx.createLinearGradient(a.left, 0, a.right, 0);
+  g.addColorStop(0, COL.accent); g.addColorStop(1, COL.blue); return g;
+}
+function gradArea(chart, a0 = .42){
+  const a = chart.chartArea; if (!a) return "rgba(99,91,255,.2)";
+  const g = chart.ctx.createLinearGradient(0, a.top, 0, a.bottom);
+  g.addColorStop(0, "rgba(99,91,255," + a0 + ")"); g.addColorStop(.6, "rgba(59,130,246,.10)"); g.addColorStop(1, "rgba(59,130,246,0)"); return g;
+}
+function crearChart(clave, canvasId, config){
+  if (charts[clave]) charts[clave].destroy();
+  charts[clave] = new Chart($(canvasId).getContext("2d"), config);
+}
+const ejeX = { grid: { display: false }, ticks: { maxTicksLimit: 9, maxRotation: 0, autoSkip: true } };
+function ejeY(log, fmt){
+  return {
+    type: log ? "logarithmic" : "linear", beginAtZero: !log,
+    grid: { color: COL.grid, lineWidth: 1 }, border: { display: false },
+    ticks: { callback: fmt, maxTicksLimit: 7 }
+  };
+}
+
+/* ============================================================================
+   PESTAÑA 1 · CALCULADORA
+   ============================================================================ */
+function poblarSelect(sel, valorSel, hasta = SERIE.length){
+  sel.innerHTML = "";
+  for (let i = 0; i < hasta; i++){
+    const o = document.createElement("option");
+    o.value = SERIE[i].periodo; o.textContent = etiqueta(SERIE[i].periodo);
+    sel.appendChild(o);
+  }
+  sel.value = valorSel;
+}
+function setKpi(id, texto, extra = ""){
+  const el = $(id); el.textContent = texto;
+  el.classList.toggle("sm", texto.length > 15);
+  el.classList.remove("neg", "pos"); if (extra) el.classList.add(extra);
+}
+
+function calcular(){
+  const inp = $("c-monto");
+  const monto = parseFloat(inp.value);
+  const o = POR_PERIODO[$("c-origen").value];
+  const d = POR_PERIODO[$("c-destino").value];
+  const ok = isFinite(monto) && monto >= 0 && o && d;
+  inp.classList.toggle("invalid", !ok);
+  if (!ok){
+    $("c-hint").textContent = "Ingresá un importe válido (número mayor o igual a 0).";
+    ["k-valor","k-acum","k-dif","k-perd"].forEach(id => setKpi(id, "—"));
+    $("k-mult").textContent = "x—"; $("c-resumen").style.display = "none";
+    return;
+  }
+  $("c-resumen").style.display = "";
+  const factor = d.ipc / o.ipc;
+  const valor = monto * factor;
+  const acum = (factor - 1) * 100;
+  const dif = valor - monto;
+  const perd = (1 - o.ipc / d.ipc) * 100;
+
+  $("k-mult").textContent = "x" + fmtNum(factor, 1);
+  setKpi("k-valor", fmtARS(valor));
+  $("k-valor-foot").textContent = fmtARS(monto) + " de " + etiqueta(o.periodo);
+  setKpi("k-acum", fmtPct(acum), acum < 0 ? "pos" : "");
+  setKpi("k-dif", (dif >= 0 ? "+" : "") + fmtARS(dif));
+  setKpi("k-perd", fmtPct(perd), perd > 0 ? "neg" : "pos");
+
+  const retro = d.i < o.i;
+  $("c-hint").textContent = retro ? "El mes de destino es anterior al de origen: se calcula hacia atrás (deflactando)." :
+    (o.i === d.i ? "Origen y destino coinciden: el valor no cambia." : "");
+  $("c-resumen").innerHTML = retro
+    ? "Lo que en <b>" + etiqueta(o.periodo) + "</b> valía <b>" + fmtARS(monto) + "</b> equivale a <b>" + fmtARS(valor) + "</b> en <b>" + etiqueta(d.periodo) + "</b>."
+    : "Para comprar en <b>" + etiqueta(d.periodo) + "</b> lo mismo que con <b>" + fmtARS(monto) + "</b> en <b>" + etiqueta(o.periodo) + "</b>, necesitás <b>" + fmtARS(valor) + "</b>.";
+
+  if (chartsOK) graficosCalc(monto, o, d);
+}
+
+function graficosCalc(monto, o, d){
+  const lo = Math.min(o.i, d.i), hi = Math.max(o.i, d.i);
+  const tramo = SERIE.slice(lo, hi + 1);
+  const etq = tramo.map(s => etiquetaC(s.periodo));
+  const log = $("c-log").checked && monto > 0;
+  const valores = tramo.map(s => monto * s.ipc / o.ipc);
+
+  crearChart("monto", "ch-monto", {
+    type: "line",
+    data: { labels: etq, datasets: [{
+      label: "Monto equivalente", data: valores, fill: true, tension: .35, borderWidth: 2.5,
+      pointRadius: tramo.length < 3 ? 5 : 0, pointHoverRadius: 5, pointHoverBackgroundColor: "#fff", pointBackgroundColor: COL.blue,
+      borderColor: c => gradLinea(c.chart), backgroundColor: c => gradArea(c.chart)
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 450 },
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: items => etiqueta(tramo[items[0].dataIndex].periodo),
+        label: i => " " + fmtARS(i.parsed.y)
+      }}},
+      scales: { x: ejeX, y: ejeY(log, v => fmtCompacto(v)) }
+    }
+  });
+
+  const meses = SERIE.slice(lo + 1, hi + 1);
+  const tasas = meses.map(s => s.mensual);
+  const max = Math.max(...tasas.filter(v => v !== null), -Infinity);
+  crearChart("mensual", "ch-mensual", {
+    type: "bar",
+    data: { labels: meses.map(s => etiquetaC(s.periodo)), datasets: [{
+      label: "Inflación mensual", data: tasas, borderRadius: 4, borderSkipped: false, maxBarThickness: 18,
+      backgroundColor: tasas.map(v => v === max ? COL.blue : "rgba(99,91,255,.75)"),
+      hoverBackgroundColor: "#8B85FF"
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 450 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: items => etiqueta(meses[items[0].dataIndex].periodo),
+        label: i => " " + fmtPct(i.parsed.y, 1)
+      }}},
+      scales: { x: ejeX, y: ejeY(false, v => fmtNum(v, 0) + "%") }
+    }
+  });
+}
+
+/* ============================================================================
+   PESTAÑA 2 · CANASTA
+   ============================================================================ */
+const anclasCache = {};
+function anclasDe(clave){
+  if (anclasCache[clave]) return anclasCache[clave];
+  const lista = Object.entries(datosCanasta[clave].anclas)
+    .filter(([p, v]) => POR_PERIODO[p] && v > 0)
+    .map(([p, v]) => ({ i: POR_PERIODO[p].i, p: v }))
+    .sort((a, b) => a.i - b.i);
+  return (anclasCache[clave] = lista);
+}
+/* Precio de un producto en el período i (índice dentro de SERIE) */
+function precioEn(clave, i){
+  const A = anclasDe(clave); if (!A.length) return NaN;
+  const ipc = SERIE[i].ipc;
+  if (i <= A[0].i) return A[0].p * ipc / SERIE[A[0].i].ipc;
+  const ult = A[A.length - 1];
+  if (i >= ult.i) return ult.p * ipc / SERIE[ult.i].ipc;
+  let k = 0; while (A[k + 1].i <= i) k++;
+  const a = A[k], b = A[k + 1];
+  const ia = SERIE[a.i].ipc, ib = SERIE[b.i].ipc;
+  const corr = (b.p / a.p) / (ib / ia);
+  const tau = (i - a.i) / (b.i - a.i);
+  return a.p * (ipc / ia) * Math.pow(corr, tau);
+}
+
+function calcularCanasta(){
+  const clave = $("p-prod").value, prod = datosCanasta[clave];
+  const cant = parseFloat($("p-cant").value);
+  const o = POR_PERIODO[$("p-origen").value];
+  const ok = prod && isFinite(cant) && cant >= 0 && o;
+  $("p-cant").classList.toggle("invalid", !ok);
+  $("p-nota").textContent = prod && prod.nota ? "ℹ " + prod.nota : "";
+  if (prod && !anclasDe(clave).length){
+    $("p-hint").textContent = "Este producto todavía no tiene precio cargado. Agregalo en datosCanasta (anclas).";
+    ["p-k-orig","p-k-hoy","p-k-dif"].forEach(id => setKpi(id, "—")); $("p-mult").textContent = "x—";
+    ["p-k-orig-foot","p-k-hoy-foot","p-k-dif-foot"].forEach(id => $(id).textContent = "");
+    if (charts.precio){ charts.precio.destroy(); delete charts.precio; }
+    return;
+  }
+  if (!ok){
+    $("p-hint").textContent = "Ingresá una cantidad válida (número mayor o igual a 0).";
+    ["p-k-orig","p-k-hoy","p-k-dif"].forEach(id => setKpi(id, "—")); $("p-mult").textContent = "x—"; return;
+  }
+  const pO = precioEn(clave, o.i), pH = precioEn(clave, ULTIMO.i);
+  const cO = cant * pO, cH = cant * pH;
+  $("p-hint").textContent = "";
+  setKpi("p-k-orig", fmtARS(cO));
+  $("p-k-orig-foot").textContent = fmtNum(cant, cant % 1 ? 2 : 0) + " × " + fmtARS(pO) + " · " + etiqueta(o.periodo);
+  setKpi("p-k-hoy", fmtARS(cH));
+  $("p-k-hoy-foot").textContent = fmtNum(cant, cant % 1 ? 2 : 0) + " × " + fmtARS(pH) + " · " + etiqueta(ULTIMO.periodo);
+  $("p-mult").textContent = "x" + fmtNum(pO > 0 ? pH / pO : NaN, 1);
+  setKpi("p-k-dif", (cH - cO >= 0 ? "+" : "") + fmtARS(cH - cO));
+  const ipcVar = (ULTIMO.ipc / o.ipc - 1) * 100, prodVar = (pH / pO - 1) * 100;
+  $("p-k-dif-foot").textContent = anclasDe(clave).length > 1
+    ? fmtPct(prodVar) + " el producto vs. " + fmtPct(ipcVar) + " el IPC"
+    : fmtPct(prodVar) + " (pasado calculado con el IPC)";
+  $("p-chart-title").textContent = "Evolución del precio: " + prod.nombre + " (" + prod.unidad + ")";
+
+  if (chartsOK) graficoCanasta(clave, o, pO);
+}
+
+function graficoCanasta(clave, o, pO){
+  const log = $("p-log").checked;
+  const precios = SERIE.map((s, i) => precioEn(clave, i));
+  const siIPC = SERIE.map((s, i) => i >= o.i ? pO * s.ipc / o.ipc : null);
+  const conComparacion = anclasDe(clave).length > 1;   // con 1 ancla ambas líneas coinciden
+  crearChart("precio", "ch-precio", {
+    type: "line",
+    data: { labels: SERIE.map(s => etiquetaC(s.periodo)), datasets: [
+      { label: "Precio del producto", data: precios, fill: true, tension: .3, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5,
+        pointHoverBackgroundColor: "#fff", borderColor: c => gradLinea(c.chart), backgroundColor: c => gradArea(c.chart) },
+      ...(conComparacion ? [{ label: "Si solo hubiera seguido al IPC desde " + etiqueta(o.periodo), data: siIPC, fill: false, tension: .3, borderWidth: 1.6,
+        borderDash: [6, 5], pointRadius: 0, pointHoverRadius: 4, borderColor: "#94A3B8" }] : [])
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 450 },
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: conComparacion, position: "bottom", labels: { padding: 18 } }, tooltip: { callbacks: {
+        title: items => etiqueta(SERIE[items[0].dataIndex].periodo),
+        label: i => " " + i.dataset.label.split(" desde")[0] + ": " + fmtARS(i.parsed.y)
+      }}},
+      scales: { x: ejeX, y: ejeY(log, v => fmtCompacto(v)) }
+    }
+  });
+}
+
+/* ============================================================================
+   PESTAÑA · INVERSIONES  (datos en vivo desde el navegador, con trazabilidad)
+   Convenciones (ver Metodología):
+   · Cada mes se valúa con la ÚLTIMA observación disponible hasta el fin de ese
+     mes (mes en curso: la última disponible). Se guarda la fecha efectiva.
+   · Dólares → pesos se vende dólar (cotización compradora del banco); pesos →
+     dólares se compra dólar (cotización vendedora). Se puede forzar una sola.
+   · S&P 500 de precio y de retorno total son series distintas e independientes.
+   ============================================================================ */
+const ACTIVOS = [
+  { id: "sp500",   nombre: "S&P 500 (precio)",        ticker: "^GSPC",    color: "#8B85FF" },
+  { id: "sp500tr", nombre: "S&P 500 (retorno total)", ticker: "^SP500TR", color: "#A78BFA" },
+  { id: "oro",     nombre: "Oro",                     ticker: "GC=F",     color: "#FACC15" },
+  { id: "btc",     nombre: "Bitcoin",                 ticker: "BTC-USD",  color: "#FB923C" }
+];
+/* Procedencia de cada serie (se muestra en el panel de trazabilidad). */
+const PROCEDENCIA = {
+  sp500:   { fuente: "Yahoo Finance (^GSPC), datos diarios", unidad: "puntos del índice (USD)", div: "No (índice de precios)", tipo: "Cotización de mercado (proveedor no oficial)", cierre: "cierre de Nueva York" },
+  sp500tr: { fuente: "Yahoo Finance (^SP500TR), datos diarios", unidad: "puntos del índice (USD)", div: "Sí (dividendos reinvertidos en el índice)", tipo: "Cotización de mercado (proveedor no oficial)", cierre: "cierre de Nueva York" },
+  oro:     { fuente: "Yahoo Finance (GC=F), futuro continuo COMEX", unidad: "USD por onza troy", div: "No aplica", tipo: "Futuro, no es spot ni fixing LBMA", cierre: "cierre de la rueda COMEX" },
+  btc:     { fuente: "Yahoo Finance (BTC-USD), datos diarios", unidad: "USD por bitcoin", div: "No aplica", tipo: "Cotización de mercado (proveedor no oficial)", cierre: "cierre diario UTC (24 h)" }
+};
+const COLOR_PESOS = "#F87171", COLOR_NOMINAL = "#94A3B8";
+const NOM_DOL = { oficial: "oficial", mep: "MEP", blue: "blue" };
+const CASA_DOL = { oficial: "oficial", mep: "bolsa", blue: "blue" };
+const num = (x) => (typeof x === "number" && isFinite(x) && x > 0) ? x : null;
+const signPct = (n, d = 1) => (n >= 0 ? "+" : "") + fmtPct(n, d);
+const minus = (s) => s.replace(/^-/, "−");
+
+/* MERCADO.px[id][periodo] = { v, f }  ·  MERCADO.dol[tipo][periodo] = { v (venta), c (compra), f } */
+const MERCADO = { px: { sp500: {}, sp500tr: {}, oro: {}, btc: {} }, dol: { oficial: {}, mep: {}, blue: {} }, spot: { oficial: null, mep: null, blue: null }, fuenteBTC: "Yahoo Finance", descargado: null };
+const ESTADO = {};                 // clave -> { ok, cache, txt }
+let INV_PER = [], INV_POR = {};    // períodos de Inversiones (IPC + meses en vivo sin IPC)
+let modoTocado = false, ULTCALC = null;
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const mesDe = (ms) => { const d = new Date(ms - 3 * 3600 * 1000); return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1); };
+const hoyAR = () => new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
+const MES_ACTUAL = () => hoyAR().slice(0, 7);
+const hhmm = () => new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+const fechaHora = (iso) => { const d = new Date(iso); return isNaN(d) ? "—" : d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); };
+const fechaLarga = (f) => f ? f.slice(8, 10) + "/" + f.slice(5, 7) + "/" + f.slice(0, 4) : "—";
+const tipoDol = () => $("i-dolar").value;
+
+function fmtMon(v, modo){ return modo === "usd" ? (v < 0 ? "-US$ " : "US$ ") + fmtNum(Math.abs(v), 2) : fmtARS(v); }
+function fmtMonCompacto(v, modo){ const t = fmtCompacto(v); return modo === "usd" ? t.replace("$ ", "US$ ") : t; }
+
+/* ============================ LÓGICA PURA (testeable) ============================ */
+/* Último dato de cada mes: filas [{f:"YYYY-MM-DD", v, c?}] -> { "YYYY-MM": fila }. Sin inventar datos. */
+function reducirMensual(filas){
+  const out = {};
+  filas.forEach(x => { if (!x || !x.f) return; const p = x.f.slice(0, 7); if (!out[p] || x.f >= out[p].f) out[p] = Object.assign({}, x); });
+  return out;
+}
+/* Observación más cercana ANTERIOR (o igual) a la fecha; filas ordenadas ascendente. null si no hay. */
+function ultimaObservacion(filas, fecha){
+  let lo = 0, hi = filas.length - 1, r = null;
+  while (lo <= hi){ const m = (lo + hi) >> 1; if (filas[m].f <= fecha){ r = filas[m]; lo = m + 1; } else hi = m - 1; }
+  return r;
+}
+/* Cotización del dólar según la operación. comprarUSD: pesos -> dólares (venta del banco); venderUSD: dólares -> pesos (compra del banco). */
+function tasaDe(f, op, cot, avisos){
+  if (!f) return null;
+  const venta = num(f.v), compra = num(f.c);
+  if (cot === "venta") return venta;
+  if (cot === "compra") return compra || (avisos && avisos.add("Falta la cotización compradora en " + fechaLarga(f.f) + ": se usó la vendedora."), venta);
+  if (op === "comprarUSD") return venta;
+  return compra || (avisos && avisos.add("Falta la cotización compradora en " + fechaLarga(f.f) + ": se usó la vendedora."), venta);
+}
+/* Simulación completa. Entrada: { monto, modo:"ars"|"usd", cot, tramo:[{periodo,ipc}], px:{id:{periodo:{v,f}}}, dol:{periodo:{v,c,f}}, ids:[...] } */
+function simular(p){
+  const { monto, modo, cot, tramo, px, dol, ids } = p, enARS = modo === "ars", avisos = new Set();
+  const o = tramo[0], d = tramo[tramo.length - 1];
+  const rate = (per, op) => tasaDe(dol[per], op, cot, avisos);
+  const assets = ids.map(id => {
+    const xo = (px[id] || {})[o.periodo], xd = (px[id] || {})[d.periodo];
+    if (!xo || !xd || !num(xo.v) || !num(xd.v)) return { id, ok: false, motivo: "Falta la cotización de " + id + " en alguna de las fechas." };
+    let units, serie;
+    if (enARS){
+      const bo = rate(o.periodo, "comprarUSD"); if (!bo) return { id, ok: false, motivo: "Falta el dólar de la fecha de compra." };
+      units = monto / bo / xo.v;
+      serie = tramo.map(s => { const x = (px[id] || {})[s.periodo], t = rate(s.periodo, "venderUSD"); return (x && t) ? units * x.v * t : null; });
+    } else {
+      units = monto / xo.v;
+      serie = tramo.map(s => { const x = (px[id] || {})[s.periodo]; return x ? units * x.v : null; });
+    }
+    const final = serie[serie.length - 1];
+    if (!num(final)) return { id, ok: false, motivo: "Falta el dólar de la fecha de venta." };
+    return { id, ok: true, units, po: xo, pd: xd, serie, final, ganancia: final - monto, ret: (final / monto - 1) * 100, mult: final / monto };
+  });
+  let pesos = { ok: false };
+  if (enARS){
+    const nec = monto * d.ipc / o.ipc, bo = rate(o.periodo, "comprarUSD"), bd = rate(d.periodo, "comprarUSD");
+    pesos = { ok: true, final: monto, nec, perdida: nec - monto, pctReal: (monto / nec - 1) * 100, inflacion: (d.ipc / o.ipc - 1) * 100,
+              serieNom: tramo.map(() => monto), serieNec: tramo.map(s => monto * s.ipc / o.ipc), tcO: bo, tcD: bd,
+              usdO: bo ? monto / bo : null, usdD: bd ? monto / bd : null, deval: (bo && bd) ? (bd / bo - 1) * 100 : null };
+    if (bo && bd) pesos.pctUSD = (pesos.usdD / pesos.usdO - 1) * 100;
+  } else {
+    const co = rate(o.periodo, "venderUSD"), vd = rate(d.periodo, "comprarUSD");
+    if (co && vd){
+      const pesosO = monto * co, fin = pesosO / vd;
+      pesos = { ok: true, pesosO, tcO: co, tcD: vd, final: fin, ganancia: fin - monto, pct: (fin / monto - 1) * 100, deval: (vd / co - 1) * 100,
+                serie: tramo.map(s => { const t = rate(s.periodo, "comprarUSD"); return t ? pesosO / t : null; }) };
+    }
+  }
+  return { assets, pesos, avisos: [...avisos], o, d, enARS, monto, cot };
+}
+
+/* ---------- copia local (para abrir sin conexión) ---------- */
+function guardarCache(){ try { localStorage.setItem("inv_mercado_v4", JSON.stringify({ m: MERCADO, t: Date.now() })); } catch (e) {} }
+function leerCache(){
+  try {
+    const c = JSON.parse(localStorage.getItem("inv_mercado_v4"));
+    if (!c || !c.m) return null;
+    Object.keys(MERCADO.px).forEach(k => Object.assign(MERCADO.px[k], (c.m.px || {})[k] || {}));
+    Object.keys(NOM_DOL).forEach(t => { Object.assign(MERCADO.dol[t], (c.m.dol || {})[t] || {}); MERCADO.spot[t] = (c.m.spot || {})[t] || null; });
+    MERCADO.fuenteBTC = c.m.fuenteBTC || MERCADO.fuenteBTC; MERCADO.descargado = c.m.descargado || null;
+    return c.t;
+  } catch (e) { return null; }
+}
+/* datos_activos.json (formato del script de Python): valores mensuales sin fecha efectiva ni cotización compradora */
+function cargarFilas(filas, fecha){
+  filas.forEach(f => {
+    ["sp500", "oro", "btc"].forEach(k => { if (num(f[k])) MERCADO.px[k][f.periodo] = { v: f[k], f: null }; });
+    if (num(f.ars)) MERCADO.dol.oficial[f.periodo] = { v: f.ars, c: null, f: null };
+  });
+}
+
+/* datos_activos.json nuevo (descargado en el servidor): { px:{id:{periodo:{v,f}}}, dol:{tipo:{periodo:{v,c,f}}}, spot, descargado, fuenteBTC } */
+function cargarDatos(d){
+  if (!d) return false;
+  let hay = false;
+  if (d.px || d.dol){
+    Object.keys(MERCADO.px).forEach(k => { const o = (d.px || {})[k]; if (o && Object.keys(o).length){ Object.assign(MERCADO.px[k], o); hay = true; } });
+    Object.keys(NOM_DOL).forEach(t => {
+      const o = (d.dol || {})[t]; if (o && Object.keys(o).length){ Object.assign(MERCADO.dol[t], o); hay = true; }
+      const sp = (d.spot || {})[t]; if (sp && num(sp.v)) MERCADO.spot[t] = sp;
+    });
+    if (d.fuenteBTC) MERCADO.fuenteBTC = d.fuenteBTC;
+  }
+  if (Array.isArray(d.filas) && d.filas.length){ cargarFilas(d.filas); hay = true; }
+  if (d.descargado) MERCADO.descargado = d.descargado;
+  return hay;
+}
+
+/* ---------- red ---------- */
+function pedir(url, ms = 12000){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { signal: c.signal, cache: "no-store" }).finally(() => clearTimeout(t));
+}
+async function getJSON(urls, ms){
+  let err = new Error("sin respuesta");
+  for (const u of urls){
+    try { const r = await pedir(u, ms); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+    catch (e) { err = e; }
+  }
+  throw err;
+}
+function urlsYahoo(simbolo){
+  const p2 = Math.floor(Date.now() / 1000) + 86400;
+  const u = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(simbolo) + "?period1=1448928000&period2=" + p2 + "&interval=1d&events=history";
+  return [u, u.replace("query1", "query2"),
+    "https://corsproxy.io/?url=" + encodeURIComponent(u),
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(u)];
+}
+async function bajarYahoo(simbolo){
+  const j = await getJSON(urlsYahoo(simbolo));
+  const r = j && j.chart && j.chart.result && j.chart.result[0];
+  if (!r || !r.timestamp || !r.indicators || !r.indicators.quote) throw new Error("respuesta vacía");
+  const cl = r.indicators.quote[0].close, off = (r.meta && r.meta.gmtoffset) || 0, filas = [];
+  r.timestamp.forEach((t, k) => { if (num(cl[k])) filas.push({ f: new Date((t + off) * 1000).toISOString().slice(0, 10), v: cl[k] }); });
+  const out = reducirMensual(filas);
+  if (!Object.keys(out).length) throw new Error("sin datos");
+  return out;
+}
+/* Respaldo de Bitcoin: Binance BTCUSDT mensual (USDT, no USD estricto). Fecha efectiva = último día del mes (UTC) o la actual. */
+async function bajarBinanceBTC(){
+  const j = await getJSON(["https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1M&limit=1000",
+                           "https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1M&limit=1000"]);
+  const out = {}, hoy = new Date().toISOString().slice(0, 10);
+  j.forEach(k => { const v = parseFloat(k[4]); if (num(v)){ const ini = new Date(k[0]), fin = new Date(Date.UTC(ini.getUTCFullYear(), ini.getUTCMonth() + 1, 0)).toISOString().slice(0, 10); out[ini.toISOString().slice(0, 7)] = { v, f: fin > hoy ? hoy : fin }; } });
+  if (!Object.keys(out).length) throw new Error("sin datos");
+  return out;
+}
+async function bajarDolarHist(tipo){
+  const j = await getJSON(["https://api.argentinadatos.com/v1/cotizaciones/dolares/" + CASA_DOL[tipo]]);
+  const filas = j.filter(x => x && x.fecha && num(x.venta)).map(x => ({ f: String(x.fecha).slice(0, 10), v: x.venta, c: num(x.compra) }));
+  const out = reducirMensual(filas);
+  if (!Object.keys(out).length) throw new Error("sin datos");
+  return out;
+}
+async function bajarDolarSpot(tipo){
+  const j = await getJSON(["https://dolarapi.com/v1/dolares/" + CASA_DOL[tipo]]);
+  if (j && num(j.venta)) return { v: j.venta, c: num(j.compra), f: j.fechaActualizacion || new Date().toISOString() };
+  throw new Error("sin datos");
+}
+
+/* ---------- estado y actualización ---------- */
+function marcar(k, ok, extra){
+  const previo = ESTADO[k];
+  if (ok) ESTADO[k] = { ok: true, txt: "en vivo " + hhmm() };
+  else if (previo && (previo.cache || previo.ok)) ESTADO[k] = { ok: false, cache: true, txt: previo.cache ? previo.txt : "último dato " + (previo.txt || "").replace("en vivo ", "") };
+  else ESTADO[k] = { ok: false, txt: extra || "sin conexión" };
+}
+let _t; function aplicarMercado(){ clearTimeout(_t); _t = setTimeout(aplicarMercadoYa, 120); }
+function aplicarMercadoYa(){
+  armarPeriodosInv(); poblarInv();
+  const hayD = Object.keys(MERCADO.dol[tipoDol()]).length > 0;
+  const om = $("i-modo").querySelector('option[value="ars"]');
+  om.disabled = !hayD;
+  if (!hayD) $("i-modo").value = "usd"; else if (!modoTocado) $("i-modo").value = "ars";
+  renderVivo(); calcularInv(); guardarCache();
+}
+function periodosMercado(){
+  const per = new Set(); Object.keys(MERCADO.px).forEach(k => Object.keys(MERCADO.px[k]).forEach(p => per.add(p)));
+  Object.keys(MERCADO.dol[tipoDol()]).forEach(p => per.add(p));
+  const hoy = MES_ACTUAL(); return [...per].filter(p => p <= hoy).sort();
+}
+function armarPeriodosInv(){
+  const ult = SERIE[SERIE.length - 1];
+  INV_PER = SERIE.slice(); INV_POR = {};
+  periodosMercado().filter(p => p > ult.periodo).forEach((p, k) => INV_PER.push({ periodo: p, ipc: ult.ipc, extra: true, i: SERIE.length + k }));
+  INV_PER.forEach(d => { INV_POR[d.periodo] = d; });
+}
+function poblarInv(){
+  if (!INV_PER.length) return;
+  const so = $("i-origen"), sd = $("i-destino");
+  const vo = so.value, vd = sd.value, ultViejo = sd.dataset.ult;
+  const ult = INV_PER[INV_PER.length - 1].periodo, hoy = MES_ACTUAL();
+  const llenar = (sel, hasta) => {
+    sel.innerHTML = "";
+    for (let i = 0; i < hasta; i++){
+      const d = INV_PER[i], op = document.createElement("option");
+      op.value = d.periodo;
+      op.textContent = etiqueta(d.periodo) + (d.extra ? (d.periodo === hoy ? " · en vivo" : " · sin IPC aún") : "");
+      sel.appendChild(op);
+    }
+  };
+  llenar(so, INV_PER.length - 1); llenar(sd, INV_PER.length);
+  so.value = (INV_POR[vo] && INV_POR[vo].i < INV_PER.length - 1) ? vo : (INV_POR["2016-01"] ? "2016-01" : INV_PER[0].periodo);
+  sd.value = (!vd || vd === ultViejo || !INV_POR[vd]) ? ult : vd;
+  sd.dataset.ult = ult;
+}
+
+async function actualizarActivo(k){
+  const simbolo = { sp500: "^GSPC", sp500tr: "^SP500TR", oro: "GC=F", btc: "BTC-USD" }[k];
+  try {
+    let serie;
+    try { serie = await bajarYahoo(simbolo); if (k === "btc") MERCADO.fuenteBTC = "Yahoo Finance"; }
+    catch (e) { if (k === "btc"){ serie = await bajarBinanceBTC(); MERCADO.fuenteBTC = "Binance (BTCUSDT mensual, USDT ≈ USD)"; } else throw e; }
+    Object.assign(MERCADO.px[k], serie); MERCADO.descargado = new Date().toISOString();
+    marcar(k, true);
+  } catch (e) { marcar(k, false); }
+  aplicarMercado();
+}
+async function actualizarDolar(completo){
+  let cambio = completo;
+  await Promise.all(Object.keys(NOM_DOL).map(async t => {
+    let ok = false;
+    if (completo){ try { Object.assign(MERCADO.dol[t], await bajarDolarHist(t)); ok = true; } catch (e) {} }
+    try {
+      const s = await bajarDolarSpot(t), ms = new Date(s.f).getTime(), f = isNaN(ms) ? hoyAR() : new Date(ms - 3 * 3600 * 1000).toISOString().slice(0, 10);
+      if (!MERCADO.spot[t] || MERCADO.spot[t].v !== s.v || MERCADO.spot[t].c !== s.c) cambio = true;
+      MERCADO.spot[t] = s; MERCADO.dol[t][f.slice(0, 7)] = { v: s.v, c: s.c, f }; ok = true;
+    } catch (e) {}
+    marcar("dolar_" + t, ok);
+  }));
+  MERCADO.descargado = new Date().toISOString();
+  if (cambio) aplicarMercado(); else renderVivo();
+}
+async function actualizarIPC(){
+  /* Fuente 1: nivel oficial (datos.gob.ar). Fuente 2: variación mensual publicada (ArgentinaDatos), solo para meses que la 1 aún no cargó. */
+  const mapa = {}, vars = {}; let ok1 = false, ok2 = false;
+  try {
+    const j = await getJSON(["https://apis.datos.gob.ar/series/api/series/?ids=145.3_INGNACNAL_DICI_M_15&format=json&limit=1000&sort=asc"]);
+    (j.data || []).forEach(r => { if (r && num(+r[1])) mapa[String(r[0]).slice(0, 7)] = +r[1]; });
+    ok1 = Object.keys(mapa).length > 0;
+  } catch (e) {}
+  try {
+    const k = await getJSON(["https://api.argentinadatos.com/v1/finanzas/indices/inflacion"]);
+    (Array.isArray(k) ? k : []).forEach(x => { if (x && x.fecha && num(+x.valor)) vars[String(x.fecha).slice(0, 7)] = +x.valor; });
+    ok2 = Object.keys(vars).length > 0;
+  } catch (e) {}
+  if (!ok1 && !ok2){ ESTADO.ipc = { ok: false, cache: true, txt: "copia incluida" }; renderVivo(); return; }
+  const antes = SERIE.length; let cambio = false;
+  const rec = (i) => { const r = SERIE[i], prev = SERIE[i - 1], [a, m] = r.periodo.split("-").map(Number), p12 = POR_PERIODO[(a - 1) + "-" + pad2(m)];
+    r.mensual = (r.ipc / prev.ipc - 1) * 100; r.interanual = p12 ? (r.ipc / p12.ipc - 1) * 100 : null; };
+  // 1) filas provisorias (variación publicada) que datos.gob.ar ya cargó: se reemplazan por el nivel oficial
+  for (let i = 1; i < SERIE.length; i++){
+    const r = SERIE[i]; if (!String(r.fuente).startsWith("INDEC (var")) continue;
+    if (ok1 && mapa[r.periodo]){ r.ipc = mapa[r.periodo]; r.fuente = "INDEC"; rec(i); cambio = true; }
+    else if (SERIE[i - 1].fuente === "INDEC" || cambio){ const v = r.mensual; r.ipc = SERIE[i - 1].ipc * (1 + v / 100); rec(i); r.mensual = v; }
+  }
+  // 2) la serie oficial incluida no debe haber sido revisada
+  const base = SERIE.filter(r => !String(r.fuente).startsWith("INDEC (var")).pop();
+  if (ok1 && base && mapa[base.periodo] && Math.abs(mapa[base.periodo] - base.ipc) > 0.05){ ESTADO.ipc = { ok: false, cache: true, txt: "serie revisada: copia incluida" }; renderVivo(); return; }
+  // 3) meses nuevos
+  for (;;){
+    const ult = SERIE[SERIE.length - 1];
+    const [a, m] = ult.periodo.split("-").map(Number);
+    const sig = m === 12 ? (a + 1) + "-01" : a + "-" + pad2(m + 1);
+    const [as, ms] = sig.split("-").map(Number), p12 = POR_PERIODO[(as - 1) + "-" + pad2(ms)];
+    let ipc, fuente, mensual;
+    if (ok1 && mapa[sig]){ ipc = mapa[sig]; fuente = "INDEC"; mensual = (ipc / ult.ipc - 1) * 100; }
+    else if (ok2 && vars[sig] !== undefined && vars[sig] > -10 && vars[sig] < 60){ mensual = vars[sig]; ipc = ult.ipc * (1 + mensual / 100); fuente = "INDEC (var.)"; }
+    else break;
+    const reg = { periodo: sig, ipc, mensual, interanual: p12 ? (ipc / p12.ipc - 1) * 100 : null, fuente, ipcba: null, i: SERIE.length };
+    SERIE.push(reg); POR_PERIODO[sig] = reg;
+  }
+  const prov = SERIE.filter(r => String(r.fuente).startsWith("INDEC (var")).length;
+  marcar("ipc", true);
+  if (prov) ESTADO.ipc.txt += " · " + prov + " mes provisorio";
+  if (SERIE.length > antes || cambio) refrescarIPCUI(Math.min(antes, SERIE.length)); else renderVivo();
+}
+function refrescarIPCUI(antes){
+  const viejo = SERIE[antes - 1].periodo;
+  ULTIMO = SERIE[SERIE.length - 1];
+  $("badge-texto").textContent = "IPC INDEC · actualizado a " + etiqueta(ULTIMO.periodo);
+  $("foot-fuentes").textContent = "Datos: INDEC vía datos.gob.ar (hasta " + etiqueta(ULTIMO.periodo) + ") · IPCBA (GCBA) para 2016";
+  const rep = (id, hasta, def) => { const s = $(id), v = s.value; poblarSelect(s, (v === viejo || !POR_PERIODO[v]) ? def : v, hasta); };
+  rep("c-origen", SERIE.length, PRIMERO.periodo); rep("c-destino", SERIE.length, ULTIMO.periodo); rep("p-origen", SERIE.length - 1, PRIMERO.periodo);
+  armarFILAS(); renderTabla(); calcular(); calcularCanasta();
+  armarPeriodosInv(); poblarInv(); calcularInv();
+}
+function actualizarTodo(){
+  ["sp500", "sp500tr", "oro", "btc"].forEach(actualizarActivo);
+  actualizarDolar(true); actualizarIPC();
+}
+
+/* ---------- barra de estado en vivo ---------- */
+function renderVivo(){
+  const t = tipoDol();
+  const nombres = [["sp500", "S&P 500"], ["sp500tr", "S&P 500 TR"], ["oro", "Oro"], ["btc", "Bitcoin"], ["dolar_" + t, "Dólar " + NOM_DOL[t]], ["ipc", "IPC INDEC"]];
+  const chips = nombres.map(([k, n]) => {
+    const e = ESTADO[k], cls = !e ? "pend" : e.ok ? "ok" : e.cache ? "cache" : "mal";
+    return '<span class="chip ' + cls + '"><i></i>' + n + ' · ' + (e ? e.txt : "consultando…") + '</span>';
+  }).join("");
+  const sp = MERCADO.spot[t];
+  const spot = sp ? '<div class="spot"><b>Dólar ' + NOM_DOL[t] + ' ahora:</b> venta <b>' + fmtARS(sp.v) + '</b>' + (sp.c ? " · compra <b>" + fmtARS(sp.c) + "</b>" : "") + ' <span>· cotización del ' + fechaHora(sp.f) + '</span></div>' : "";
+  $("i-vivo").innerHTML = spot + '<div class="chips">' + chips + '</div><button type="button" class="btn-sec" id="i-act">Actualizar ahora</button>';
+}
+
+function limpiarInv(){
+  $("i-kpis").innerHTML = ""; $("i-resumen").style.display = "none"; $("i-pie").textContent = ""; $("i-traza").style.display = "none"; ULTCALC = null;
+  ["invevo", "invret"].forEach(k => { if (charts[k]){ charts[k].destroy(); delete charts[k]; } });
+}
+
+function calcularInv(){
+  const hayPx = Object.keys(MERCADO.px).some(k => Object.keys(MERCADO.px[k]).length), hayDol = Object.keys(MERCADO.dol[tipoDol()]).length > 0;
+  const vacio = !INV_PER.length || (!hayPx && !hayDol);
+  $("inv-vacio").style.display = vacio ? "" : "none";
+  $("inv-contenido").style.display = vacio ? "none" : "";
+  if (vacio) return;
+
+  const inp = $("i-monto"), monto = parseFloat(inp.value);
+  const o = INV_POR[$("i-origen").value], d = INV_POR[$("i-destino").value];
+  const modo = $("i-modo").value, enARS = modo === "ars", dolNom = NOM_DOL[tipoDol()], cot = $("i-cot").value;
+  $("i-pre").textContent = enARS ? "$" : "US$";
+  inp.classList.toggle("pre-wide", !enARS);
+  $("i-vista").disabled = !enARS;
+  const ok = isFinite(monto) && monto > 0 && o && d;
+  inp.classList.toggle("invalid", !ok);
+  $("i-equiv").textContent = "";
+  if (!ok){ $("i-hint").textContent = "Ingresá un importe válido (mayor que 0)."; limpiarInv(); return; }
+  if (d.i <= o.i){ $("i-hint").textContent = "El mes de venta tiene que ser posterior al mes de compra."; limpiarInv(); return; }
+  $("i-hint").textContent = "";
+
+  const tramo = INV_PER.slice(o.i, d.i + 1);
+  const R = simular({ monto, modo, cot, tramo, px: MERCADO.px, dol: MERCADO.dol[tipoDol()], ids: ACTIVOS.map(a => a.id) });
+  if (enARS && (!R.pesos.tcO || !R.pesos.tcD)){ $("i-hint").textContent = "Falta la cotización del dólar " + dolNom + " de ese período. Probá con otro dólar, otras fechas o el modo dólares."; limpiarInv(); return; }
+  const res = R.assets.map((r, k) => Object.assign({ a: ACTIVOS[k] }, r)), pesos = R.pesos;
+  if (enARS && pesos.tcO) $("i-equiv").textContent = fmtARS(monto) + " equivalen a US$ " + fmtNum(pesos.usdO, 2) + " al dólar " + dolNom + " (vendedor) de " + fechaLarga((MERCADO.dol[tipoDol()][o.periodo] || {}).f) + " (" + fmtARS(pesos.tcO) + ").";
+  if (!enARS && pesos.ok) $("i-equiv").textContent = "US$ " + fmtNum(monto, 2) + " equivalen a " + fmtARS(pesos.pesosO) + " al dólar " + dolNom + " (comprador) de " + fechaLarga((MERCADO.dol[tipoDol()][o.periodo] || {}).f) + " (" + fmtARS(pesos.tcO) + ").";
+  if (enARS) res.forEach(r => { if (r.ok) r.real = (r.final / pesos.nec - 1) * 100; });
+
+  const validos = res.filter(r => r.ok);
+  const mejor = validos.length ? validos.reduce((x, y) => y.ret > x.ret ? y : x) : null;
+  const fmtMult = m => "x" + fmtNum(m, m >= 10 ? 1 : 2);
+  ULTCALC = { res, pesos, tramo, modo, enARS, monto, o, d, R };
+
+  let html = res.map(r => {
+    const a = r.a, nom = '<span><i class="dot" style="background:' + a.color + '"></i>' + a.nombre + '</span>';
+    if (!r.ok) return '<div class="kpi"><div class="kpi-label">' + nom + '</div><div class="kpi-value sm">Sin datos</div><div class="kpi-foot">' + r.motivo + '</div></div>';
+    const real = enARS ? '<br>Real (vs. inflación): <b class="' + (r.real >= 0 ? "pos" : "neg") + '">' + signPct(r.real) + '</b>' : "";
+    return '<div class="kpi' + (r === mejor ? " kpi--hero" : "") + '"><div class="kpi-label">' + nom + '<span class="pill">' + fmtMult(r.mult) + '</span></div>' +
+      '<div class="kpi-value sm">' + fmtMon(r.final, modo) + '</div>' +
+      '<div class="kpi-foot">Rendimiento: <b class="' + (r.ret >= 0 ? "pos" : "neg") + '">' + signPct(r.ret) + '</b><br>Ganancia: <b class="' + (r.ganancia >= 0 ? "pos" : "neg") + '">' + minus(fmtMon(r.ganancia, modo)) + '</b>' + real + '<br><span class="tk">' + a.ticker + ' · ' + fechaLarga(r.po.f) + ' → ' + fechaLarga(r.pd.f) + '</span></div></div>';
+  }).join("");
+
+  const nomP = '<span><i class="dot" style="background:' + COLOR_PESOS + '"></i>Pérdida de poder de compra</span>';
+  if (pesos.ok && enARS){
+    html += '<div class="kpi kpi--loss"><div class="kpi-label">' + nomP + '<span class="pill pill--loss">' + minus(signPct(pesos.pctReal)) + '</span></div>' +
+      '<div class="kpi-value sm neg">' + minus(fmtARS(-pesos.perdida)) + '</div>' +
+      '<div class="kpi-foot">Es lo que perdiste por la inflación (en pesos de hoy). Para comprar hoy lo mismo que en ' + etiqueta(o.periodo) + ' necesitarías <b>' + fmtARS(pesos.nec) + '</b> y tenés <b>' + fmtARS(monto) + '</b>.<br>Tus ' + fmtARS(monto) + ' de hoy equivalen a <b>' + fmtARS(monto * o.ipc / d.ipc) + '</b> de ' + etiqueta(o.periodo) + '.</div></div>';
+  } else if (pesos.ok){
+    html += '<div class="kpi kpi--loss"><div class="kpi-label">' + nomP + '<span class="pill pill--loss">' + minus(signPct(pesos.pct)) + '</span></div>' +
+      '<div class="kpi-value sm neg">' + minus(fmtMon(pesos.ganancia, modo)) + '</div>' +
+      '<div class="kpi-foot">Es lo que perdiste en dólares por quedarte en pesos. Tus US$ ' + fmtNum(monto, 2) + ' pasados a pesos al dólar ' + dolNom + ' comprador (' + fmtARS(pesos.tcO) + ') y recomprados al vendedor de ' + etiqueta(d.periodo) + ' (' + fmtARS(pesos.tcD) + ') valen hoy <b>' + fmtMon(pesos.final, modo) + '</b>.</div></div>';
+  } else {
+    html += '<div class="kpi"><div class="kpi-label">' + nomP + '</div><div class="kpi-value sm">Sin datos</div><div class="kpi-foot">Falta el dólar ' + dolNom + ' de ese período.</div></div>';
+  }
+  $("i-kpis").innerHTML = html;
+
+  $("i-resumen").style.display = "";
+  $("i-resumen").innerHTML = mejor
+    ? "Si en <b>" + etiqueta(o.periodo) + "</b> tenías <b>" + fmtMon(monto, modo) + "</b> y te quedabas en pesos, " +
+      (pesos.ok ? (enARS ? "hasta <b>" + etiqueta(d.periodo) + "</b> la inflación te hizo perder <b class=\"neg\">" + fmtARS(pesos.perdida) + "</b> de poder de compra (" + minus(signPct(pesos.pctReal)) + "): para comprar lo mismo necesitarías " + fmtARS(pesos.nec) + ". "
+                         : "hasta <b>" + etiqueta(d.periodo) + "</b> esos pesos valían <b>" + fmtMon(pesos.final, modo) + "</b> (<b class=\"neg\">" + minus(signPct(pesos.pct)) + "</b>). ") : "") +
+      "En cambio, invirtiendo en <b>" + mejor.a.nombre + "</b> habrías llegado a <b>" + fmtMon(mejor.final, modo) + "</b> (" + signPct(mejor.ret) + ")."
+    : "No hay datos para el período elegido.";
+
+  const act = MERCADO.descargado ? " Consulta realizada el " + fechaHora(MERCADO.descargado) + " h." : "";
+  $("i-pie").textContent = "Cada mes se valúa con la última cotización disponible hasta fin de mes (el mes en curso, con la última disponible); las fechas efectivas figuran debajo de cada resultado y en el detalle de datos." + act +
+    (R.avisos.length ? " Aviso: " + R.avisos.slice(0, 2).join(" ") : "") +
+    (d.extra && enARS ? " El IPC está publicado hasta " + etiqueta(SERIE[SERIE.length - 1].periodo) + ": para meses posteriores se usa ese último índice, por lo que la pérdida de poder de compra puede ser mayor." : "");
+  $("i-sub-evo").textContent = enARS ? "Valor mes a mes en pesos nominales (si se vendiera el dólar ese mes)" : "Valor mes a mes en dólares";
+  renderTraza();
+  if (chartsOK) graficosInv();
+}
+
+/* ---------- panel de trazabilidad ---------- */
+function renderTraza(){
+  if (!ULTCALC) return;
+  const { res, pesos, enARS, monto, o, d, R } = ULTCALC, t = tipoDol(), cot = $("i-cot").value;
+  const f = (r, x) => r.ok ? fechaLarga(x.f) + " · " + fmtNum(x.v, 2) : "—";
+  let filas = res.map(r => {
+    const P = PROCEDENCIA[r.a.id];
+    return "<tr><td><b>" + r.a.nombre + "</b></td><td>" + (r.a.id === "btc" ? MERCADO.fuenteBTC + " (BTC-USD)" : P.fuente) + "<br><span class=\"tk\">" + P.cierre + "</span></td><td>" + P.unidad + "</td><td>" + f(r, r.po) + "</td><td>" + f(r, r.pd) + "</td><td>" + P.div + "</td><td>" + P.tipo + "</td></tr>";
+  });
+  const dd = MERCADO.dol[t], fo = dd[o.periodo] || {}, fd = dd[d.periodo] || {};
+  const cc = (x) => x.f ? fechaLarga(x.f) + " · compra " + (x.c ? fmtARS(x.c) : "s/d") + " · venta " + fmtARS(x.v) : "—";
+  filas.push("<tr><td><b>Dólar " + NOM_DOL[t] + "</b></td><td>ArgentinaDatos (histórico) y DolarApi (último valor): agregadores, no la fuente primaria</td><td>Pesos por US$</td><td>" + cc(fo) + "</td><td>" + cc(fd) + "</td><td>No aplica</td><td>Cotización informada por terceros; " + (cot === "operacion" ? "se usa la compradora al vender dólares y la vendedora al comprarlos" : "se usa siempre la " + (cot === "venta" ? "vendedora" : "compradora")) + "</td></tr>");
+  const io = o, id = d;
+  filas.push("<tr><td><b>IPC (inflación)</b></td><td>INDEC vía datos.gob.ar, serie 145.3_INGNACNAL_DICI_M_15 (2016: IPCBA de CABA)</td><td>Índice base dic-2016 = 100</td><td>" + etiqueta(io.periodo) + " · " + fmtNum(io.ipc, 2) + "</td><td>" + etiqueta(id.periodo) + " · " + fmtNum(id.ipc, 2) + (id.extra ? " (último publicado: no hay IPC posterior)" : "") + "</td><td>No aplica</td><td>Oficial (dato mensual, no diario)</td></tr>");
+  let extra = "";
+  if (pesos.ok && enARS && pesos.deval != null) extra = "<p class=\"note\" style=\"margin-top:10px\"><b>Pesos sin invertir, por separado:</b> inflación acumulada (IPC) <b>" + signPct(pesos.inflacion) + "</b> · variación del dólar " + NOM_DOL[t] + " (vendedor) de " + fmtARS(pesos.tcO) + " a " + fmtARS(pesos.tcD) + ": <b>" + signPct(pesos.deval) + "</b> · valor en dólares de tus pesos: de US$ " + fmtNum(pesos.usdO, 2) + " a US$ " + fmtNum(pesos.usdD, 2) + " (<b>" + signPct(pesos.pctUSD) + "</b>). La depreciación frente al dólar y la inflación son medidas distintas.</p>";
+  if (pesos.ok && !enARS) extra = "<p class=\"note\" style=\"margin-top:10px\"><b>Pesos sin invertir, por separado:</b> variación del dólar " + NOM_DOL[t] + " entre la cotización compradora de origen (" + fmtARS(pesos.tcO) + ") y la vendedora de destino (" + fmtARS(pesos.tcD) + "): " + signPct(pesos.deval) + ". Incluye la diferencia entre compra y venta.</p>";
+  $("i-traza-tabla").innerHTML = '<div style="overflow-x:auto"><table class="mini" style="min-width:880px"><thead><tr><th>Serie</th><th>Fuente y serie</th><th>Unidad</th><th>Compra: fecha efectiva · valor</th><th>Venta: fecha efectiva · valor</th><th>Incluye dividendos</th><th>Tipo de dato</th></tr></thead><tbody>' + filas.join("") + "</tbody></table></div>" + extra;
+  $("i-traza").style.display = "";
+}
+
+function graficosInv(){
+  if (!ULTCALC) return;
+  const { res, pesos, tramo, modo, enARS } = ULTCALC;
+  const log = $("i-log").checked, real = enARS && $("i-vista").value === "real";
+  const etq = tramo.map(s => etiquetaC(s.periodo));
+  const datasets = res.filter(r => r.ok).map(r => ({
+    label: r.a.nombre, data: r.serie, borderColor: r.a.color, backgroundColor: r.a.color, borderWidth: 2.2,
+    pointRadius: tramo.length < 3 ? 4 : 0, pointHoverRadius: 5, tension: .25, spanGaps: true, fill: false
+  }));
+  if (pesos.ok){
+    if (enARS){
+      datasets.push({ label: "Pesos sin invertir", data: pesos.serieNom, borderColor: COLOR_NOMINAL, backgroundColor: COLOR_NOMINAL, borderWidth: 1.8, borderDash: [3, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0, fill: false });
+      datasets.push({ label: "Pesos necesarios para no perder poder de compra", data: pesos.serieNec, borderColor: COLOR_PESOS, backgroundColor: COLOR_PESOS, borderWidth: 2, borderDash: [7, 5], pointRadius: 0, pointHoverRadius: 4, tension: .25, fill: false });
+    } else {
+      datasets.push({ label: "Pesos sin invertir (en US$)", data: pesos.serie, borderColor: COLOR_PESOS, backgroundColor: COLOR_PESOS, borderWidth: 2.2, borderDash: [7, 5], pointRadius: 0, pointHoverRadius: 4, tension: .25, spanGaps: true, fill: false });
+    }
+  }
+  crearChart("invevo", "ch-inv-evo", {
+    type: "line", data: { labels: etq, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 450 },
+      interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom", labels: { padding: 16 } }, tooltip: { itemSort: (a, b) => b.parsed.y - a.parsed.y, callbacks: {
+        title: items => etiqueta(tramo[items[0].dataIndex].periodo),
+        label: i => " " + i.dataset.label + ": " + fmtMon(i.parsed.y, modo)
+      }}},
+      scales: { x: ejeX, y: ejeY(log, v => fmtMonCompacto(v, modo)) }
+    }
+  });
+
+  const barras = res.filter(r => r.ok).map(r => ({ n: r.a.nombre, v: real ? r.real : r.ret, c: r.a.color }));
+  if (pesos.ok) barras.push({ n: "Pesos sin invertir", v: real ? pesos.pctReal : (enARS ? 0 : pesos.pct), c: COLOR_PESOS });
+  barras.sort((a, b) => b.v - a.v);
+  $("i-tit-ret").textContent = real ? "Rendimiento real del período (%)" : "Rendimiento total del período (%)";
+  $("i-sub-ret").textContent = real ? "Descontando la inflación: lo que realmente ganó o perdió poder de compra" : (enARS ? "Variación nominal entre el mes de compra y el de venta" : "Variación en dólares entre el mes de compra y el de venta");
+  crearChart("invret", "ch-inv-ret", {
+    type: "bar",
+    data: { labels: barras.map(b => b.n), datasets: [{ label: "Rendimiento", data: barras.map(b => b.v), backgroundColor: barras.map(b => b.c), borderRadius: 6, borderSkipped: false, maxBarThickness: 34 }] },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false, animation: { duration: 450 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: i => " " + signPct(i.parsed.x) } } },
+      scales: {
+        x: { grid: { color: COL.grid }, border: { display: false }, ticks: { callback: v => fmtNum(v, 0) + "%", maxTicksLimit: 6, maxRotation: 0, autoSkip: true } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function descargarCSVInv(){
+  if (!ULTCALC) return;
+  const { res, pesos, tramo, modo, enARS } = ULTCALC, u = modo === "usd" ? "usd" : "ars";
+  const cab = ["periodo"].concat(res.filter(r => r.ok).map(r => r.a.nombre.replace(/[ ,()]/g, "_") + "_" + u));
+  if (pesos.ok) cab.push(enARS ? "pesos_sin_invertir_ars" : "pesos_sin_invertir_usd"); if (pesos.ok && enARS) cab.push("pesos_para_mantener_poder_compra_ars");
+  const filas = [cab.join(",")];
+  tramo.forEach((s, k) => {
+    const f = [s.periodo].concat(res.filter(r => r.ok).map(r => r.serie[k] == null ? "" : r.serie[k].toFixed(2)));
+    if (pesos.ok){ const v = enARS ? pesos.serieNom[k] : pesos.serie[k]; f.push(v == null ? "" : (+v).toFixed(2)); }
+    if (pesos.ok && enARS) f.push(pesos.serieNec[k].toFixed(2));
+    filas.push(f.join(","));
+  });
+  const blob = new Blob(["﻿" + filas.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "inversiones_" + ULTCALC.o.periodo + "_a_" + ULTCALC.d.periodo + ".csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/* Funciones puras expuestas para las pruebas automáticas */
+window.INVLIB = { reducirMensual, ultimaObservacion, tasaDe, simular };
+
+function iniciarInv(){
+  const incrustado = (typeof DATOS_ACTIVOS !== "undefined" && DATOS_ACTIVOS) ? cargarDatos(DATOS_ACTIVOS) : false;
+  const tc = incrustado ? null : leerCache();
+  if (incrustado){
+    const f = MERCADO.descargado ? new Date(MERCADO.descargado).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
+    Object.keys(MERCADO.px).forEach(k => { if (Object.keys(MERCADO.px[k]).length) ESTADO[k] = { ok: false, cache: true, txt: "servidor " + f }; });
+    Object.keys(NOM_DOL).forEach(t => { if (Object.keys(MERCADO.dol[t]).length) ESTADO["dolar_" + t] = { ok: false, cache: true, txt: "servidor " + f }; });
+  }
+  if (tc){
+    const f = new Date(tc).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+    Object.keys(MERCADO.px).forEach(k => { if (Object.keys(MERCADO.px[k]).length) ESTADO[k] = { ok: false, cache: true, txt: "copia del " + f }; });
+    Object.keys(NOM_DOL).forEach(t => { if (Object.keys(MERCADO.dol[t]).length) ESTADO["dolar_" + t] = { ok: false, cache: true, txt: "copia del " + f }; });
+  }
+  aplicarMercadoYa();
+  $("i-json").addEventListener("change", ev => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const d = JSON.parse(rd.result);
+        if (!cargarDatos(d)) throw new Error("formato");
+        Object.keys(MERCADO.px).forEach(k => { if (Object.keys(MERCADO.px[k]).length && !(ESTADO[k] && ESTADO[k].ok)) ESTADO[k] = { ok: false, cache: true, txt: "archivo cargado" }; });
+        if (Object.keys(MERCADO.dol.oficial).length && !(ESTADO.dolar_oficial && ESTADO.dolar_oficial.ok)) ESTADO.dolar_oficial = { ok: false, cache: true, txt: "archivo cargado" };
+        aplicarMercadoYa();
+      } catch (e) { $("i-json-msg").textContent = "El archivo no es un datos_activos.json válido."; }
+    };
+    rd.readAsText(f);
+  });
+  $("i-vivo").addEventListener("click", ev => { if (ev.target.id === "i-act") actualizarTodo(); });
+  $("i-reintentar").addEventListener("click", () => actualizarTodo());
+  $("i-csv").addEventListener("click", descargarCSVInv);
+  $("i-monto").addEventListener("input", debounce(calcularInv));
+  ["i-origen", "i-destino", "i-log", "i-vista", "i-cot"].forEach(id => $(id).addEventListener("change", calcularInv));
+  $("i-modo").addEventListener("change", () => { modoTocado = true; calcularInv(); });
+  $("i-dolar").addEventListener("change", aplicarMercadoYa);
+
+  // En vivo: dólar cada minuto, activos cada 5 minutos, IPC cada 6 horas
+  actualizarTodo();
+  setInterval(() => { if (!document.hidden) actualizarDolar(false); }, 60 * 1000);
+  setInterval(() => { if (!document.hidden) Object.keys(MERCADO.px).forEach(actualizarActivo); }, 5 * 60 * 1000);
+  setInterval(() => { if (!document.hidden) actualizarIPC(); }, 30 * 60 * 1000);
+}
+
+/* ============================================================================
+   PESTAÑA 3 · SERIE HISTÓRICA
+   ============================================================================ */
+let FILAS = [];
+function armarFILAS(){
+  FILAS = SERIE.slice().reverse().map(d => ({
+    d, hay: normalizar(d.periodo + " " + MESES[+d.periodo.slice(5) - 1] + " " + MESES_C[+d.periodo.slice(5) - 1] + " " + d.periodo.slice(0, 4))
+  }));
+}
+armarFILAS();
+function renderTabla(){
+  const q = normalizar($("s-buscar").value.trim()).split(/\s+/).filter(Boolean);
+  const vis = FILAS.filter(f => q.every(t => f.hay.includes(t)));
+  $("s-body").innerHTML = vis.map(({ d }) => {
+    const m = d.mensual, a = d.interanual;
+    return "<tr><td>" + d.periodo + (d.fuente === "IPCBA" ? '<span class="tag" title="Empalme con IPCBA">EMPALME</span>' : String(d.fuente).startsWith("INDEC (var") ? '<span class="tag" title="Variación mensual publicada por el INDEC; el nivel oficial aún no está cargado en datos.gob.ar">PROVISORIO</span>' : "") + "</td>" +
+      "<td>" + MESES[+d.periodo.slice(5) - 1] + "</td>" +
+      "<td>" + fmtNum(d.ipc, 2) + "</td>" +
+      "<td" + (m !== null && m < 0 ? ' class="pos"' : "") + ">" + fmtPct(m, 1) + "</td>" +
+      "<td" + (a !== null && a < 0 ? ' class="pos"' : "") + ">" + fmtPct(a, 1) + "</td></tr>";
+  }).join("");
+  $("s-empty").style.display = vis.length ? "none" : "block";
+  $("s-count").textContent = "Mostrando " + vis.length + " de " + FILAS.length + " períodos";
+}
+function descargarCSV(){
+  const filas = ["periodo,mes,ipc_base_dic2016,var_mensual_pct,var_interanual_pct,fuente"];
+  SERIE.forEach(d => filas.push([d.periodo, MESES[+d.periodo.slice(5) - 1], d.ipc, d.mensual ?? "", d.interanual ?? "", d.fuente].join(",")));
+  const blob = new Blob(["﻿" + filas.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "ipc_argentina_2016_actualidad.csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/* ============================================================================
+   PESTAÑA 4 · METODOLOGÍA (tabla de empalme dinámica)
+   ============================================================================ */
+function renderEmpalme(){
+  const filas = SERIE.filter(d => d.fuente === "IPCBA");
+  const ref = POR_PERIODO["2016-12"];
+  $("m-empalme").querySelector("tbody").innerHTML = filas.map(d =>
+    "<tr><td>" + etiqueta(d.periodo) + "</td><td>" + fmtNum(d.ipcba, 2) + "</td><td>" + fmtNum(d.ipc, 2) + "</td></tr>"
+  ).join("") + (ref ? "<tr><td><b>Diciembre 2016</b> (base INDEC)</td><td>—</td><td><b>100,00</b></td></tr>" : "");
+}
+
+/* ============================================================================
+   NAVEGACIÓN SPA (hash, sin recargar)
+   ============================================================================ */
+const TABS = ["calculadora", "canasta", "inversiones", "serie", "metodologia"];
+function mostrar(tab){
+  if (!TABS.includes(tab)) tab = "calculadora";
+  TABS.forEach(t => {
+    $("view-" + t).classList.toggle("active", t === tab);
+  });
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  try { window.scrollTo({ top: 0 }); } catch (e) {}
+  if (chartsOK){
+    if (tab === "calculadora") { calcular(); }
+    if (tab === "canasta") { calcularCanasta(); }
+    if (tab === "inversiones") { calcularInv(); }
+  }
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+  mostrar(b.dataset.tab);
+  // En un iframe (Streamlit) el historial puede estar bloqueado: no debe frenar el cambio de pestaña.
+  try { if (location.hash !== "#" + b.dataset.tab) history.pushState(null, "", "#" + b.dataset.tab); } catch (e) {}
+}));
+window.addEventListener("popstate", () => mostrar(location.hash.slice(1)));
+window.addEventListener("hashchange", () => mostrar(location.hash.slice(1)));
+
+/* ============================================================================
+   INICIALIZACIÓN
+   ============================================================================ */
+function iniciar(){
+  if (!SERIE.length){
+    document.querySelector("main").insertAdjacentHTML("afterbegin", '<div class="card warn" style="margin-top:24px"><h3>Sin datos</h3><p>La constante <code>DATOS_IPC</code> está vacía. Generá el archivo con el script de Python.</p></div>');
+    return;
+  }
+  $("badge-texto").textContent = "IPC INDEC · actualizado a " + etiqueta(ULTIMO.periodo);
+  $("foot-fuentes").textContent = "Datos: INDEC vía datos.gob.ar (hasta " + etiqueta(ULTIMO.periodo) + ") · IPCBA (GCBA) para 2016";
+
+  // Calculadora
+  poblarSelect($("c-origen"), PRIMERO.periodo);
+  poblarSelect($("c-destino"), ULTIMO.periodo);
+  ["c-monto"].forEach(id => $(id).addEventListener("input", debounce(calcular)));
+  ["c-origen", "c-destino", "c-log"].forEach(id => $(id).addEventListener("change", calcular));
+  $("c-btn").addEventListener("click", calcular);
+
+  // Canasta
+  const sp = $("p-prod");
+  const ordenCat = c => { const i = CATEGORIAS.indexOf(c); return i < 0 ? CATEGORIAS.length : i; };
+  Object.keys(datosCanasta)
+    .map((k, pos) => ({ k, pos }))
+    .sort((a, b) => ordenCat(datosCanasta[a.k].categoria) - ordenCat(datosCanasta[b.k].categoria) || a.pos - b.pos)
+    .map(x => x.k)
+    .forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = datosCanasta[k].nombre + " · " + datosCanasta[k].unidad + (Object.keys(datosCanasta[k].anclas).length ? "" : " (sin precio)"); sp.appendChild(o);
+  });
+  poblarSelect($("p-origen"), PRIMERO.periodo, SERIE.length - 1);
+  $("p-cant").addEventListener("input", debounce(calcularCanasta));
+  ["p-prod", "p-origen", "p-log"].forEach(id => $(id).addEventListener("change", calcularCanasta));
+
+  // Inversiones (datos en vivo)
+  iniciarInv();
+
+  // Serie y metodología
+  renderTabla(); renderEmpalme();
+  $("s-buscar").addEventListener("input", debounce(renderTabla, 80));
+  $("s-csv").addEventListener("click", descargarCSV);
+
+  if (!iniciarChartJS()) sinCharts();
+  calcular(); calcularCanasta(); calcularInv();
+  mostrar(location.hash.slice(1) || "calculadora");
+}
+/* Si Chart.js llega tarde (CDN alternativo), se redibuja todo. */
+window.__chartListo = function(){ if (iniciarChartJS()){ calcular(); calcularCanasta(); calcularInv(); } };
+iniciar();
+</script>
+</body>
+</html>
